@@ -1,5 +1,6 @@
 mod active_monitor;
 mod commands;
+pub mod installed_apps;
 mod launcher_window;
 mod shortcut;
 
@@ -25,6 +26,13 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            app.manage(std::sync::Arc::new(installed_apps::CatalogCache::default()));
+            app.manage(std::sync::Arc::new(
+                installed_apps::icons::IconCache::default(),
+            ));
+            app.manage(std::sync::Arc::new(
+                installed_apps::launching::LaunchActivity::default(),
+            ));
             app.manage(shortcut::register(app.handle()));
             let window = app
                 .get_webview_window("main")
@@ -35,7 +43,13 @@ pub fn run() {
         .on_window_event(|window, event| {
             // Native window focus, not DOM/input blur: clicking results or moving
             // focus between controls inside NEXUS must not dismiss the window.
-            if window.label() == "main" && matches!(event, tauri::WindowEvent::Focused(false)) {
+            if window.label() == "main"
+                && matches!(event, tauri::WindowEvent::Focused(false))
+                && !window
+                    .app_handle()
+                    .state::<std::sync::Arc<installed_apps::launching::LaunchActivity>>()
+                    .is_active()
+            {
                 match window.is_focused() {
                     Ok(false) => {
                         if let Err(error) = window.hide() {
@@ -59,6 +73,10 @@ pub fn run() {
             launcher_window::show_launcher,
             launcher_window::start_launcher_drag,
             shortcut::shortcut_status,
+            installed_apps::list_installed_apps,
+            installed_apps::refresh_installed_apps,
+            installed_apps::launching::launch_installed_app,
+            installed_apps::icons::get_installed_app_icon,
         ])
         .build(tauri::generate_context!())
         .expect("error while building NEXUS")

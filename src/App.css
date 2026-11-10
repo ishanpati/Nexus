@@ -56,6 +56,19 @@ kbd { font-family: inherit; font-size: 11px; }
 .empty-state { margin: 16px 10px; color: #a8a6b5; font-size: 13px; }
 .empty-state strong { color: #d3c8e8; font-weight: 500; }
 .footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 20px; border-top: 1px solid #ffffff0b; color: #8e8b9a; font-size: 10px; }
+.brand-bar, .search-field, .footer, .launcher > .status { flex-shrink: 0; }
+.launcher > .status { margin: 3px 20px 7px; }
+.command-title, .command-description { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.command-badge { flex-shrink: 0; }
+.refresh-button, .more-results { border: 0; background: transparent; color: #bcb1ed; font-size: 10px; padding: 3px 5px; }
+.refresh-button { margin-left: auto; }
+.refresh-button:disabled { color: #8d8d9b; cursor: default; }
+.refresh-button:focus-visible, .more-results:focus-visible { outline: 1px solid #c1b4ff; border-radius: 3px; }
+.more-results { display: block; margin: 6px auto; }
+.catalog-status { margin: 0 10px; color: #aaa6b6; font-size: 11px; line-height: 16px; }
+.catalog-status p { margin: 5px 0; }
+.catalog-status .error { color: #ffb1b1; }
+.results { scrollbar-width: thin; scrollbar-color: #51495f transparent; }
 .keyboard-hints, .keyboard-hints > span { display: flex; align-items: center; gap: 5px; }
 .keyboard-hints { gap: 15px; }
 .keyboard-hints kbd { display: inline-grid; place-items: center; min-width: 16px; height: 16px; border: 1px solid #ffffff13; border-radius: 3px; color: #b1abba; }

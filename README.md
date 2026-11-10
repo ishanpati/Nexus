@@ -6,7 +6,7 @@ The finished application must work without ChatGPT, API keys, paid AI services,
 LLMs, or cloud infrastructure. Target hardware: Intel Core Ultra 7 225H, 16 GB RAM.
 
 **Current status:** a dark, borderless command bar with local command filtering,
-keyboard selection, real Notepad launching, and Escape-to-hide. The 650 x 310 window
+installed-application search, keyboard selection, real Notepad launching, and Escape-to-hide. The 650 x 310 window
 opens near the upper center of the active monitor and skips the taskbar.
 Drag the top header to move it temporarily; showing NEXUS again restores its default
 upper-center position. **Ctrl+Shift+Space** toggles the bar; Escape and switching
@@ -21,12 +21,15 @@ shows the existing instance. There is no tray entry yet.
 | `src/commands.ts` | Typed command registry, aliases, and matching |
 | `src/services/commandService.ts` | Narrow typed execution request to Rust |
 | `src/hooks/useLauncherWindow.ts` | Input focus lifecycle and native hide/drag requests |
+| `src/appSearch.ts`, `src/launchUsage.ts` | Local search ranking and successful-launch counts |
+| `src/appCatalog.ts`, `src/hooks/useAppCatalog.ts` | Shared in-memory catalog and asynchronous startup/refresh |
 | `public/`, `src/assets/` | Static assets |
 | `src-tauri/src/main.rs`, `src-tauri/src/lib.rs` | Native entry point, Tauri setup, and Rust commands |
 | `src-tauri/src/launcher_window.rs` | Native positioning, visibility, and placement tests |
 | `src-tauri/src/shortcut.rs` | Global shortcut registration, toggle handler, status, and cleanup |
 | `src-tauri/src/active_monitor.rs` | Windows foreground-monitor lookup with primary fallback |
 | `src-tauri/src/commands/` | Typed native dispatch, argument validation, and Notepad handler |
+| `src-tauri/src/installed_apps/` | Read-only Windows application discovery, typed catalog, cache, and tests |
 | `tests/commands.test.mjs` | Command matching tests using Node's built-in test runner |
 | `src-tauri/tauri.conf.json`, `src-tauri/capabilities/` | Window/build configuration and permissions |
 | `vite.config.ts`, `tsconfig*.json` | Frontend tooling and TypeScript checks |
@@ -153,3 +156,173 @@ Frontend capabilities grant only event listen/unlisten permissions. Shortcut
 registration, cleanup, window operations, and single-instance activation are
 native Rust operations and need no frontend plugin permissions. The desktop
 capability grants no additional permissions; opener permissions are not granted.
+
+## Installed-application discovery (v0.2 backend)
+
+The Rust commands `list_installed_apps` and `refresh_installed_apps` return a
+catalog object with `apps`, `generation`, `scanned_at_unix_ms`, `sources`,
+`warnings`, and `duplicates_removed`. Both commands take no application paths,
+search text, or executable names. Discovery does not launch anything. Catalog apps
+are searchable as preview results in the command bar. The existing Notepad command and window
+behavior are unchanged; release version numbers and installer identity are unchanged.
+
+Each app has an opaque stable `id`, `display_name`, typed `launch`, optional `icon`,
+and `sources`. A shortcut retains its original `.lnk` path, raw target, arguments,
+working directory, show mode, and explicit AppUserModelID when present. Its `.lnk`
+remains authoritative for any future launching: do not reconstruct a command from
+these metadata fields. Packaged apps retain their AUMID; other catalog apps retain
+their AppsFolder parsing identifier. `alternate_launches` preserves the Shell
+identifier when an entry is merged with its shortcut. Icon references describe a
+resource path/index or a Shell item; image extraction is not implemented.
+
+The first list call scans lazily on a dedicated COM STA thread, off the UI thread.
+Further list calls return the in-memory snapshot. Concurrent first requests share
+one scan; refresh explicitly replaces the snapshot, including removing old apps.
+A failed refresh returns an error and keeps the last snapshot. Partial results
+include source completion flags and diagnostics. No files or settings are written
+by discovery; there is no disk cache, watcher, service, or network dependency.
+
+Supported sources and limits:
+
+- Current-user and all-users Start Menu Programs folders, located through Windows
+  Known Folder APIs. Recursive scanning stays inside these trees, skips reparse
+  points, and has a depth limit. Existing `.lnk` targets ending in `.exe` or `.com`
+  are included. Missing/inaccessible targets are omitted with diagnostics.
+- Current-user Windows AppsFolder, including registered Win32 applications and
+  launchable UWP/MSIX/Microsoft Store applications. Packaged identifiers are
+  classified using Windows' `ParseApplicationUserModelId`. Framework/resource
+  packages without an AppsFolder application are not enumerated.
+- Exact native identities are deduplicated. An explicit AppUserModelID shared by
+  one shortcut and a Shell entry also merges them, retaining both launch forms.
+  Different shortcuts sharing an ID remain separate because they can represent
+  profiles or different arguments. Names and executable paths alone never merge
+  entries, so some apparent duplicates intentionally remain. IDs are stable while
+  the native shortcut path or application identifier is unchanged.
+- Recognizable uninstall labels/executables, a known crash-handler executable,
+  and path-identified help/document/script entries are excluded. Filtering is
+  conservative; localized uninstallers or obscure internal helpers can remain.
+- Portable apps outside these sources, apps registered only to another user,
+  services/drivers, URL/document/script shortcuts, and advertised MSI or virtual
+  shortcuts without a filesystem target are not independently discovered. Some
+  may still appear through AppsFolder as opaque Shell applications. Shell catalog
+  membership is not a guarantee that an application can launch; opaque targets
+  cannot be fully validated without activating them, which this feature never does.
+
+The direct Windows-only `windows` 0.62.2 dependency uses the version already in the
+lockfile. No new frontend packages or permissions were added. Native API references:
+[Windows Known Folders](https://learn.microsoft.com/en-us/windows/win32/shell/knownfolderid),
+[Shell link metadata](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nn-shobjidl_core-ishelllinkw),
+and [AppUserModelIDs](https://learn.microsoft.com/en-us/windows/win32/shell/appids).
+
+### Inspect and test the catalog
+
+From the project root, use the read-only diagnostic (the same Rust cache and
+scanner as the Tauri commands; no GUI instance or global shortcut is registered):
+
+```powershell
+cargo run --locked --offline --manifest-path src-tauri/Cargo.toml --example installed_apps > src-tauri/target/installed-apps.json
+$catalog = Get-Content -Raw src-tauri/target/installed-apps.json | ConvertFrom-Json
+$catalog.apps.Count
+$catalog.sources | Format-Table
+$catalog.apps | Select-Object display_name, id | Format-Table
+$catalog.apps | Where-Object display_name -Match 'Notepad|Calculator' | ConvertTo-Json -Depth 8
+$catalog.warnings
+```
+
+The diagnostic checks that a second list is identical to the cached first list,
+then explicitly refreshes and verifies the generation increment before printing
+JSON. The output is local, under ignored `target/`, and includes installed paths
+and shortcut arguments; it is not sent anywhere. Run it from your normal Windows
+user session: a restricted sandbox can hide AppsFolder or user-specific paths.
+
+Future frontend code can call the registered commands without new permissions:
+
+```typescript
+import { invoke } from '@tauri-apps/api/core';
+const catalog = await invoke('list_installed_apps');
+const refreshed = await invoke('refresh_installed_apps');
+```
+
+For native regression tests and compilation:
+
+```powershell
+cargo test --locked --offline --manifest-path src-tauri/Cargo.toml
+cargo build --locked --offline --manifest-path src-tauri/Cargo.toml
+```
+
+Tests cover identity-based deduplication, ambiguous profiles, preserved alternate
+launch forms, sorting, empty catalogs, concurrent cache reads, refresh replacement,
+failed-refresh recovery, and native temporary `.lnk` metadata/broken-target handling.
+They never launch the shortcut targets. To check the desktop regression manually,
+run `npm.cmd run tauri dev` and repeat the existing Notepad, drag, Escape, focus-loss,
+and Ctrl+Shift+Space checks above.
+
+Verified on this Windows machine on 2026-11-10: **191 catalog entries** after
+19 native-ID merges (78 shortcuts, 46 packaged apps, 67 other Shell entries).
+All three sources completed without diagnostics in the normal user session.
+The diagnostic verified cache reuse and refresh; 26 Rust tests and 5 frontend
+tests passed, and both the native executable and frontend compiled. The sandbox
+could not access AppsFolder, so the machine count comes from the authorized
+read-only diagnostic outside it. Desktop IPC invocation, the full v0.1 mouse/
+keyboard regression sequence, and a rebuilt installer were not manually tested
+for this backend change.
+
+## Application search
+
+At frontend startup NEXUS calls `list_installed_apps` once and retains the snapshot
+in memory. React development remounts share the same pending request. Typing only
+searches the local index; it never calls discovery. **Refresh apps** explicitly
+calls `refresh_installed_apps`, keeps the previous results usable while waiting,
+and retains them if refresh fails. Loading, empty-catalog, no-match, partial-source,
+and error/retry messages appear alongside the working built-in commands.
+
+Ranking uses exact name/alias, name prefix, word prefix, substring, then conservative
+typo matching. Fuzzy matching requires at least four characters, accepts at most
+one edit for queries under eight characters or two for longer queries, and requires
+80% similarity. Adjacent transpositions count as one edit. Punctuation-containing
+queries and queries longer than 64 characters do not receive fuzzy matching.
+Curated aliases include `vscode`, `vs code`, `chrome`, `edge`, and `calc`; executable
+paths are never used as aliases. Existing command aliases and partial matching remain.
+
+Successful-launch frequency is a capped tie-breaker after textual tier and edit
+distance, so popularity cannot outrank a better text match. Counts are local to
+NEXUS, stored in WebView local storage, and never inferred from clicks or previews.
+Currently only successful executions of the existing Open Notepad command create
+counts. App previews do not launch or accumulate usage; the app-ID ranking support
+is ready for a future launching feature. No Windows-wide usage tracking is added.
+
+The initial batch contains eight ranked results in the existing compact scroll
+area (the window does not grow to fit eight rows). Scrolling near the bottom, the
+Show more button, or arrow navigation reveals additional batches. Up/Down wraps
+through all matches and brings the selected row into view. Escape still hides
+the window. Enter/click on an **app preview** only displays an explanatory message;
+the **Open Notepad command** still launches Notepad through its existing handler.
+
+Manual checks:
+
+1. Run `npm.cmd run tauri dev`. The initial results should contain Open Notepad
+   plus app previews after the catalog loads.
+2. Try `chrome`, `chorme`, `calc`, and an installed app's full name. Try `zzzzzzzz`
+   to check the no-results message.
+3. Search `windows` (or another term with more than eight matches). Scroll down
+   to reveal more; press Up from the first result to wrap to the last, then Down
+   to return to the first. Changing the query resets selection and the batch.
+4. Press Enter on an app preview: it should explain that launching is not enabled
+   and leave NEXUS visible. Search `open notepad` and press Enter to check the
+   existing real command; it should open Notepad and hide NEXUS.
+5. Click Refresh apps, then keep typing. Existing results remain searchable during
+   discovery. Press Escape and summon again with Ctrl+Shift+Space.
+
+`npm.cmd test` covers ranking tiers, aliases, typo limits, nonsense input, usage
+tie-breaking, v0.1 command integration, batch navigation, startup request coalescing,
+cache reuse, refresh replacement, and failure/retry handling. No new packages,
+native permissions, or application-launch commands were added for search.
+
+Search verification on 2026-11-10: all **17 frontend tests passed**, and the
+TypeScript/Vite production build passed. The Tauri desktop app started successfully
+and loaded 191 catalog entries. Desktop checks verified `chorme` matching Chrome,
+non-launching app previews, no-results text, refresh feedback and completion,
+eight-result batches, scroll expansion, arrow wraparound with automatic scrolling,
+the existing Notepad launch/hide behavior, reopening, and Escape-to-hide. Initial
+failure, empty-catalog, and refresh-failure recovery were tested in the catalog
+store tests, not forced against the live Windows catalog. No installer was rebuilt.
