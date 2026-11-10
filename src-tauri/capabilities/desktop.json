@@ -1,0 +1,13 @@
+{
+  "identifier": "desktop-capability",
+  "description": "Global shortcuts and single-instance activation are managed only in Rust; no frontend plugin permissions are needed.",
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
+  ],
+  "windows": [
+    "main"
+  ],
+  "permissions": []
+}
