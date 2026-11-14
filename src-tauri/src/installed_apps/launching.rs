@@ -11,14 +11,14 @@ impl LaunchActivity {
     pub fn is_active(&self) -> bool {
         self.0.load(Ordering::SeqCst)
     }
-    fn acquire(self: &Arc<Self>) -> Result<LaunchGuard, String> {
+    pub(crate) fn acquire(self: &Arc<Self>) -> Result<LaunchGuard, String> {
         self.0
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
             .map_err(|_| "An application is already opening. Please wait.".to_string())?;
         Ok(LaunchGuard(self.clone()))
     }
 }
-struct LaunchGuard(Arc<LaunchActivity>);
+pub(crate) struct LaunchGuard(Arc<LaunchActivity>);
 impl Drop for LaunchGuard {
     fn drop(&mut self) {
         self.0.0.store(false, Ordering::SeqCst);

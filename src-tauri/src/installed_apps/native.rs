@@ -13,7 +13,7 @@ use windows::{
     core::{Interface, PCWSTR, w},
 };
 
-pub(super) fn on_sta<T: Send + 'static>(
+pub(crate) fn on_sta<T: Send + 'static>(
     operation: impl FnOnce() -> Result<T, String> + Send + 'static,
 ) -> Result<T, String> {
     std::thread::Builder::new()

@@ -1,5 +1,7 @@
 mod active_monitor;
 mod commands;
+mod file_actions;
+pub mod file_search;
 pub mod installed_apps;
 mod launcher_window;
 mod shortcut;
@@ -26,6 +28,7 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            app.manage(std::sync::Arc::new(file_search::FileSearch::default()));
             app.manage(std::sync::Arc::new(installed_apps::CatalogCache::default()));
             app.manage(std::sync::Arc::new(
                 installed_apps::icons::IconCache::default(),
@@ -69,6 +72,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::execute_command,
+            file_search::search_files,
+            file_actions::open_file_result,
             launcher_window::hide_launcher,
             launcher_window::show_launcher,
             launcher_window::start_launcher_drag,

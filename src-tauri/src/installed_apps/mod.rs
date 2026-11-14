@@ -4,7 +4,7 @@ pub mod icons;
 pub mod launching;
 mod model;
 #[cfg(windows)]
-mod native;
+pub(crate) mod native;
 #[cfg(windows)]
 mod windows;
 
