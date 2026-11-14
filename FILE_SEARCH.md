@@ -44,9 +44,10 @@ const results = await invoke('search_files', { query: 'meeting notes', limit: 8 
 
 ## Semantics and failures
 
-- Searches are case-insensitive literal substrings of the full path. Leading and
-  trailing whitespace is trimmed; internal spaces are literal. For example,
-  `meeting notes` is one phrase, not two separate Everything search terms.
+- Searches are case-insensitive literal text. The v0.3.1 working branch prioritizes
+  filenames/stems using separate bounded folder/file passes before path fallback.
+  Path separators select explicit path search. Leading/trailing whitespace is
+  trimmed; `meeting notes` remains one literal phrase. See FILE_SEARCH_RANKING.md.
 - Every character is encoded as a regex hex literal and passed as one `-regex`
   argument. Everything operators such as `ext:pdf`, `!`, `|`, and `*` are literal
   characters, not an advanced search language. Even `-exit` is search data.
@@ -57,9 +58,9 @@ const results = await invoke('search_files', { query: 'meeting notes', limit: 8 
 - ES is asked to wait up to three seconds for its database. A separate five-second
   wall-clock deadline kills and reaps a stuck ES child. Output is capped at 4 MiB
   and stderr at 16 KiB, with concurrent draining to prevent pipe deadlocks.
-- A shared service permits one active search. Overlapping requests return `busy`
-  rather than queuing an unbounded number of processes. Blocking work runs off
-  Tauri's UI thread. A future search UI should debounce and discard stale results.
+- A shared service permits one active search, with at most two ES children for its
+  independent folder/file passes. Overlapping searches return `busy`. Blocking work
+  runs off Tauri's UI thread; the frontend debounces and discards stale responses.
 - EFU output is decoded strictly as UTF-8 and parsed as CSV with quoted commas and
   escaped quotes. Directory classification comes from indexed Windows attributes,
   so there is no per-result filesystem access. Invalid or oversized results fail

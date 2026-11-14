@@ -59,7 +59,7 @@ export function fileSearchError(error: unknown): string {
 type Timer = (callback: () => void, delay: number) => () => void;
 const schedule: Timer = (callback, delay) => { const timer = setTimeout(callback, delay); return () => clearTimeout(timer); };
 
-/** Serialize IPC because Rust permits one ES child. Keep only the latest pending
+/** Serialize IPC because Rust permits one search (with bounded ES passes). Keep only the latest pending
  * query; generation checks reject stale successes AND failures across mode changes. */
 export function createFileSearchStore(
   search: (query: string, limit: number) => Promise<readonly FileResult[]>,

@@ -48,6 +48,15 @@ premature blur dismissal while an operation is running.
 3. `output.rs`: strictly parses UTF-8 EFU/CSV into full path, filename, extension,
    and directory flag. No drive scan or per-row filesystem lookup occurs.
 
+The v0.3.1 working branch adds `retrieval.rs` (bounded exact/prefix/substring/path
+passes, independent folder/file pools, two concurrent ES children maximum) and
+`ranking.rs` (normalized-path deduplication, strict match tiers, Known Folder and
+configured-project context). Final result limits follow ranking. A five-second
+deadline covers all passes. `fileUsage.ts` stores the latest 256 successful file
+opens locally; optional `openedPaths` is bounded, ranking-only IPC data. No open
+target or ES process argument is derived from that history. File fuzzy retrieval
+is not implemented. See FILE_SEARCH_RANKING.md for the verified behavior and limits.
+
 `file_actions.rs` validates absolute paths, rejects device/URL/stream and ambiguous
 paths, canonicalizes and checks existence/type, and enforces confirmation for
 potentially executable/unknown files. Confirmed requests are revalidated; original

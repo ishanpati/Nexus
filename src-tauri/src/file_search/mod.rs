@@ -2,15 +2,17 @@
 //! command line. No filesystem scanning, result launching, or UI integration.
 mod output;
 mod process;
+mod ranking;
+mod retrieval;
 
 use serde::Serialize;
 use std::{
     path::PathBuf,
     sync::{
-        Arc,
+        Arc, OnceLock,
         atomic::{AtomicBool, Ordering},
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 pub const MAX_RESULTS: u32 = 100;
@@ -50,7 +52,7 @@ impl std::fmt::Display for SearchError {
 impl std::error::Error for SearchError {}
 type Result<T> = std::result::Result<T, SearchError>;
 
-#[derive(Debug, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct FileResult {
     pub full_path: String,
     pub filename: String,
@@ -64,10 +66,21 @@ pub struct FileResult {
 #[derive(Default)]
 pub struct FileSearch {
     active: AtomicBool,
+    context: OnceLock<ranking::Context>,
 }
 impl FileSearch {
     pub fn search(&self, query: &str, limit: u32) -> Result<Vec<FileResult>> {
-        let args = arguments(query, limit)?;
+        self.search_with_opened(query, limit, &[])
+    }
+
+    pub fn search_with_opened(
+        &self,
+        query: &str,
+        limit: u32,
+        opened: &[String],
+    ) -> Result<Vec<FileResult>> {
+        arguments(query, limit)?;
+        validate_opened(opened)?;
         self.active
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
             .map_err(|_| {
@@ -93,18 +106,46 @@ impl FileSearch {
             std::env::var_os("NEXUS_ES_PATH").map(PathBuf::from),
             std::env::var_os("PATH"),
         )?;
-        // A real IPC request checks reachability, unlike a process-name check:
-        // a service alone or an inaccessible/elevated instance is not sufficient.
-        let response = process::run(&executable, &args, Duration::from_secs(5), 4 * 1024 * 1024)?;
-        check_exit(response.code)?;
-        let results = output::parse(&response.stdout, limit as usize)?;
-        if response.code == Some(9) && !results.is_empty() {
-            return Err(SearchError::new(
-                ErrorCode::MalformedOutput,
-                "ES reported no matches but returned result rows.",
-            ));
-        }
-        Ok(results)
+        let started = Instant::now();
+        let candidates = retrieval::collect(query, limit as usize, |pass, directory| {
+            let remaining = Duration::from_secs(5).checked_sub(started.elapsed()).filter(|duration| !duration.is_zero())
+                .ok_or_else(|| SearchError::new(ErrorCode::Timeout, "Everything did not finish searching within five seconds. Retry when its index is ready."))?;
+            let args = retrieval::pass_arguments(query, pass, directory)?;
+            let response = process::run(&executable, &args, remaining, 4 * 1024 * 1024)?;
+            check_exit(response.code)?;
+            let results = output::parse(&response.stdout, retrieval::POOL_LIMIT as usize)?;
+            if (response.code == Some(9) && !results.is_empty())
+                || results.iter().any(|item| item.is_directory != directory)
+            {
+                return Err(SearchError::new(
+                    ErrorCode::MalformedOutput,
+                    "ES returned inconsistent result types or no-match status.",
+                ));
+            }
+            Ok(results)
+        })?;
+        Ok(ranking::rank(
+            candidates,
+            query,
+            self.context.get_or_init(ranking::Context::system),
+            opened,
+            limit as usize,
+        ))
+    }
+}
+
+fn validate_opened(opened: &[String]) -> Result<()> {
+    if opened.len() > 256
+        || opened
+            .iter()
+            .any(|path| path.len() > 4096 || path.chars().any(char::is_control))
+    {
+        Err(SearchError::new(
+            ErrorCode::InvalidInput,
+            "File history exceeds its allowed size.",
+        ))
+    } else {
+        Ok(())
     }
 }
 
@@ -220,12 +261,15 @@ fn check_exit(code: Option<i32>) -> Result<()> {
 pub async fn search_files(
     query: String,
     limit: u32,
+    opened_paths: Option<Vec<String>>,
     search: tauri::State<'_, Arc<FileSearch>>,
 ) -> Result<Vec<FileResult>> {
     // Reject invalid IPC inputs before allocating a blocking worker.
     arguments(&query, limit)?;
+    let opened = opened_paths.unwrap_or_default();
+    validate_opened(&opened)?;
     let search = search.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || search.search(&query, limit))
+    tauri::async_runtime::spawn_blocking(move || search.search_with_opened(&query, limit, &opened))
         .await
         .map_err(|e| {
             SearchError::new(
@@ -238,6 +282,13 @@ pub async fn search_files(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn history_is_bounded_and_cannot_supply_process_arguments() {
+        assert!(validate_opened(&vec!["x".into(); 257]).is_err());
+        assert!(validate_opened(&["x".repeat(4097)]).is_err());
+        assert!(validate_opened(&["bad\npath".into()]).is_err());
+        assert!(validate_opened(&[]).is_ok());
+    }
     #[test]
     fn user_text_cannot_become_switches_or_everything_operators() {
         for query in [

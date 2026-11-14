@@ -13,6 +13,7 @@ import { FileResultContent } from "./components/FileResultContent";
 import { invoke } from "@tauri-apps/api/core";
 import { canActivateFile, createFileActions, type FileAction } from "./fileActions";
 import { FileConfirmation } from "./components/FileConfirmation";
+import { recordFileOpen } from "./fileUsage";
 import "./App.css";
 
 type ResultItem = SearchItem | { kind: "file"; key: string; label: string; file: FileResult };
@@ -87,6 +88,7 @@ function App() {
       const outcome = await openFile(file, action, confirmed);
       if (outcome.status === "confirmation_required") setConfirmation(outcome);
       else {
+        if (action === "open") setUsageNotice(recordFileOpen(file.full_path) ?? "");
         setConfirmation(null);
         setQuery("");
         setSelectedIndex(0);

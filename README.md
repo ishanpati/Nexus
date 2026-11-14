@@ -65,7 +65,8 @@ appear; conservative deduplication can leave visually similar entries.
 ## File search and opening (v0.3)
 
 Type `f ` followed by a **literal** query. For example, `f meeting notes` searches
-that phrase anywhere in indexed full paths. File mode has a teal input border,
+indexed names first, with path-only matches as a lower-priority fallback. Queries
+containing a path separator explicitly search paths. File mode has a teal input border,
 filename/parent-folder labels, generic file/folder icons, and matching highlights.
 Normal application search resumes when the prefix is removed.
 
@@ -73,6 +74,14 @@ Search waits 150 ms after typing, keeps only the newest pending query, and ignor
 stale successes and errors. Previous matches remain visible while updating but
 cannot be opened until current results arrive. The initial batch is ten; up to
 100 matches can be browsed. Narrow the query to find more specific results.
+
+The v0.3.1 working branch retrieves independent folder/file candidate pools before
+ranking: exact name/stem, prefix, word-boundary, substring, then path-only matches.
+Location and previous opens only break ties within a match tier. Windows Known
+Folders supply Desktop/Documents/Downloads locations, including OneDrive redirection.
+Optional `NEXUS_PROJECT_DIRS` contains semicolon-separated absolute project roots
+(up to 32); set it before starting NEXUS. No file fuzzy search is enabled.
+See [FILE_SEARCH_RANKING.md](FILE_SEARCH_RANKING.md) for limits and measured latency.
 
 Files open with their Windows default association; folders open in Explorer.
 Executables, scripts, shortcuts, installers, macro-capable and unknown formats
