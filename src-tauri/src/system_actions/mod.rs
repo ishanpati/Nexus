@@ -105,6 +105,40 @@ trait Operations {
     fn sleep(&self) -> Result<Option<String>>;
 }
 impl SystemActions {
+    /// Registry-only adapter: the registry has already checked its own mandatory
+    /// confirmation policy. Existing launcher confirmation tickets remain separate.
+    pub(crate) fn execute_registered(
+        &self,
+        value: serde_json::Value,
+        confirmed: bool,
+    ) -> Result<ActionOutcome> {
+        let request = parse(value)?;
+        if matches!(request, SystemRequest::Lock(_) | SystemRequest::Sleep(_)) && !confirmed {
+            return Err(ActionError::new(
+                ErrorCode::ConfirmationRequired,
+                "Confirm this terminal system action before executing.",
+            ));
+        }
+        #[cfg(windows)]
+        {
+            // Use a separate ticket scope so registry dispatch cannot replace a
+            // pending launcher sleep prompt. Both scopes use the same native handler.
+            let scope = SystemActions::default();
+            let first = scope.dispatch(request, None, &native::WindowsOperations)?;
+            if let ActionOutcome::ConfirmationRequired { token, .. } = first {
+                scope.dispatch(request, Some(&token), &native::WindowsOperations)
+            } else {
+                Ok(first)
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            Err(ActionError::new(
+                ErrorCode::Unsupported,
+                "These actions require Windows.",
+            ))
+        }
+    }
     fn dispatch(
         &self,
         request: SystemRequest,

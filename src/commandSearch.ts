@@ -5,7 +5,7 @@ import { suggestSystemCommands } from "./systemCommands.ts";
 
 /** One entry point for non-file results, reusing the existing ranking algorithm. */
 export function searchCommandsAndApps(query: string, apps: readonly IndexedItem[], counts: LaunchCounts = {}) {
-  if (searchMode(query).kind === "files") return [];
+  if (searchMode(query).kind !== "apps") return [];
   return rankApplications([
     ...findCommands(query).map(indexCommand),
     ...suggestSystemCommands(query).map(indexSystemCommand), ...apps,

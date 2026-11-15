@@ -12,7 +12,7 @@ The UI displayed the first ten of up to 100 received items; it did not rank file
 
 With ES **1.1.0.38**, a live full-path `nexus` search returned `.git`, `node_modules`,
 and `target` descendants first. A filename-only `/ad` exact regex immediately found
-`C:\Users\ishan\Projects\nexus`. Directory attributes parsed correctly: crowding,
+the local `nexus` project directory. Directory attributes parsed correctly: crowding,
 not broken directory classification, caused this reproduced case.
 
 The finance tracker Desktop copy is actually under `OneDrive\Desktop`. Exact-stem
@@ -55,7 +55,7 @@ Context within a tier:
 - Direct Desktop: +12; direct Documents/Downloads: +8, resolved through
   `SHGetKnownFolderPath` (including OneDrive redirection).
 - At/in a configured project root: +4. `NEXUS_PROJECT_DIRS` is a Windows path list,
-  for example `C:\Users\ishan\Projects;D:\work`. Only absolute roots are used, up
+  for example `C:\Projects;D:\work`. Only absolute roots are used, up
   to 32. Restart NEXUS after changes. Missing Known Folders simply omit that bonus.
 - Previously opened in NEXUS: +2, independent of frequency. The latest 256 file
   opens are kept in local storage, separate from app usage. Reveal, failed opens,

@@ -1,3 +1,4 @@
+pub mod action_registry;
 mod active_monitor;
 pub mod audio;
 mod audio_feedback;
@@ -8,6 +9,10 @@ pub mod installed_apps;
 mod launcher_window;
 mod shortcut;
 mod system_actions;
+mod workflow_execution;
+mod workflow_picker;
+mod workflow_studio;
+mod workflows;
 
 use tauri::Manager;
 
@@ -31,6 +36,9 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            app.manage(workflow_studio::Studio::default());
+            app.manage(action_registry::ActionRegistry::default());
+            app.manage(workflow_execution::Engine::default());
             app.manage(audio_feedback::Feedback::default());
             app.manage(std::sync::Arc::new(system_actions::SystemActions::default()));
             app.manage(std::sync::Arc::new(audio::AudioService::default()));
@@ -50,6 +58,39 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if window.label() == workflow_studio::LABEL {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    workflow_studio::request_close(window.app_handle());
+                }
+            }
+            // Never destroy the shortcut's launcher while auxiliary windows survive.
+            // Active runs keep running; an idle quit first protects Studio's draft.
+            if window.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let app = window.app_handle();
+                    match workflow_studio::launcher_close(
+                        app.state::<workflow_execution::Engine>().has_active(),
+                        app.get_webview_window(workflow_studio::LABEL).is_some(),
+                    ) {
+                        workflow_studio::LauncherClose::Hide => {
+                            let _ = window.hide();
+                        }
+                        workflow_studio::LauncherClose::Exit => app.exit(0),
+                        workflow_studio::LauncherClose::AskStudio => {
+                            if let Err(error) = workflow_studio::request_quit(app) {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                                shortcut::report_error(
+                                    app,
+                                    format!("Could not quit NEXUS: {error}"),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
             // Native window focus, not DOM/input blur: clicking results or moving
             // focus between controls inside NEXUS must not dismiss the window.
             if window.label() == "main"
@@ -77,6 +118,21 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            workflow_picker::pick_workflow_path,
+            workflow_studio::open_workflow_studio,
+            workflow_studio::studio_ready,
+            workflow_studio::studio_pending,
+            workflow_studio::studio_resolve,
+            workflow_execution::start_workflow,
+            workflow_execution::workflow_run_status,
+            workflow_execution::list_workflow_runs,
+            workflow_execution::cancel_workflow_run,
+            workflow_execution::decide_workflow_action,
+            workflows::list_workflows,
+            workflows::get_workflow,
+            workflows::save_workflow,
+            workflows::delete_workflow,
+            action_registry::list_workflow_actions,
             audio_feedback::audio_feedback_state,
             system_actions::execute_system_action,
             system_actions::cancel_system_confirmation,

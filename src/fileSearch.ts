@@ -4,13 +4,15 @@ export interface FileResult {
   readonly extension: string;
   readonly is_directory: boolean;
 }
-export type SearchMode = { kind: "apps" } | { kind: "files"; query: string };
+export type SearchMode = { kind: "apps" } | { kind: "files"; query: string } | { kind: "workflows"; query: string };
 export const FILE_BATCH_SIZE = 10;
 export const FILE_RESULT_LIMIT = 100;
 export const FILE_DEBOUNCE_MS = 150;
 
 export function searchMode(input: string): SearchMode {
-  return /^f /i.test(input) ? { kind: "files", query: input.slice(2).trim() } : { kind: "apps" };
+  if (/^f /i.test(input)) return { kind: "files", query: input.slice(2).trim() };
+  if (/^w /i.test(input)) return { kind: "workflows", query: input.slice(2).trim() };
+  return { kind: "apps" };
 }
 
 export function parentFolder(path: string): string {

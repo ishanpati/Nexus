@@ -30,7 +30,7 @@ pub enum FileOutcome {
     Opened { warning: Option<String> },
 }
 
-fn validate_path(path: &str) -> Result<(), String> {
+pub(crate) fn validate_path(path: &str) -> Result<(), String> {
     let bytes = path.as_bytes();
     let drive =
         bytes.len() >= 3 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' && bytes[2] == b'\\';
@@ -145,7 +145,30 @@ fn perform(
     request: FileRequest,
     open: impl FnOnce(&Path, bool, FileAction) -> Result<Option<String>, String>,
 ) -> Result<FileOutcome, String> {
+    perform_for_kind(request, None, open)
+}
+
+pub(crate) fn inspect_selected(path: &str, expected_directory: bool) -> Result<bool, String> {
+    let (resolved, directory) = resolve(path)?;
+    check_kind(directory, Some(expected_directory))?;
+    Ok(sensitive(Path::new(path), directory) || sensitive(&resolved, directory))
+}
+
+fn check_kind(directory: bool, expected: Option<bool>) -> Result<(), String> {
+    if expected.is_some_and(|expected| expected != directory) {
+        Err("The selected path has the wrong type. Select a file for Open file or a folder for Open folder.".into())
+    } else {
+        Ok(())
+    }
+}
+
+fn perform_for_kind(
+    request: FileRequest,
+    expected_directory: Option<bool>,
+    open: impl FnOnce(&Path, bool, FileAction) -> Result<Option<String>, String>,
+) -> Result<FileOutcome, String> {
     let (resolved, directory) = resolve(&request.path)?;
+    check_kind(directory, expected_directory)?;
     if request.action == FileAction::Open
         && !request.confirmed
         && (sensitive(Path::new(&request.path), directory) || sensitive(&resolved, directory))
@@ -155,6 +178,29 @@ fn perform(
     }
     // Revalidate on every confirmed request, not only when displaying the prompt.
     open(&resolved, directory, request.action).map(|warning| FileOutcome::Opened { warning })
+}
+
+pub(crate) fn open_selected(
+    path: &str,
+    directory: bool,
+    confirmed: bool,
+) -> Result<FileOutcome, String> {
+    let request = FileRequest {
+        path: path.into(),
+        action: FileAction::Open,
+        confirmed,
+    };
+    #[cfg(windows)]
+    {
+        crate::installed_apps::native::on_sta(move || {
+            perform_for_kind(request, Some(directory), native_open)
+        })
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (request, directory);
+        Err("Opening files is supported on Windows only.".into())
+    }
 }
 
 #[tauri::command]
@@ -302,6 +348,39 @@ mod tests {
         }
         assert!(!sensitive(Path::new("report.txt"), false));
         assert!(!sensitive(Path::new("folder.exe"), true));
+    }
+    #[test]
+    fn registry_path_kind_and_sensitivity_are_rechecked_before_open() {
+        let executable = std::env::current_exe().unwrap();
+        let file = executable.to_str().unwrap();
+        let folder = executable.parent().unwrap().to_str().unwrap();
+        assert!(inspect_selected(file, false).unwrap());
+        assert!(!inspect_selected(folder, true).unwrap());
+        assert!(inspect_selected(file, true).is_err());
+        assert!(inspect_selected(folder, false).is_err());
+        let request = FileRequest {
+            path: file.into(),
+            action: FileAction::Open,
+            confirmed: true,
+        };
+        assert!(
+            perform_for_kind(request, Some(true), |_, _, _| panic!(
+                "wrong kind must never open"
+            ))
+            .is_err()
+        );
+        let request = FileRequest {
+            path: file.into(),
+            action: FileAction::Open,
+            confirmed: false,
+        };
+        assert!(matches!(
+            perform_for_kind(request, Some(false), |_, _, _| panic!(
+                "sensitive file needs confirmation"
+            ))
+            .unwrap(),
+            FileOutcome::ConfirmationRequired { .. }
+        ));
     }
     #[test]
     fn missing_path_fails_without_opening_and_errors_are_clear() {

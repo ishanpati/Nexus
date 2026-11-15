@@ -78,6 +78,30 @@ fn registered_item(identifier: &str) -> Result<IShellItem, String> {
     Err("This application is no longer registered with Windows. Refresh apps and try again.".into())
 }
 
+/// Resolve current registration without launching; used by whole-workflow preflight.
+pub(super) fn check_available(app: &InstalledApp) -> Result<(), String> {
+    validate(app)?;
+    match &app.launch {
+        LaunchTarget::Shortcut { path, .. } => {
+            super::windows::shortcut(std::path::Path::new(path), Source::UserStartMenu)?.ok_or(
+                "This shortcut no longer points to a supported application. Refresh apps.",
+            )?;
+        }
+        LaunchTarget::PackagedApp {
+            app_user_model_id, ..
+        } => {
+            if !super::windows::is_packaged_id(app_user_model_id) {
+                return Err("Invalid packaged application ID. Refresh apps.".into());
+            }
+            registered_item(app_user_model_id)?;
+        }
+        LaunchTarget::ShellApp { parsing_name, .. } => {
+            registered_item(parsing_name)?;
+        }
+    }
+    Ok(())
+}
+
 pub(super) fn launch(app: &InstalledApp) -> Result<(), String> {
     validate(app)?;
     let result = match &app.launch {
@@ -276,6 +300,8 @@ mod tests {
             None,
             Source::UserStartMenu,
         );
+        let check = app.clone();
+        assert!(on_sta(move || check_available(&check)).is_err());
         assert!(on_sta(move || launch(&app)).is_err());
         let app = InstalledApp::new(
             "Invalid package".into(),
@@ -286,6 +312,8 @@ mod tests {
             None,
             Source::AppsFolder,
         );
+        let check = app.clone();
+        assert!(on_sta(move || check_available(&check)).is_err());
         assert!(
             on_sta(move || launch(&app))
                 .unwrap_err()

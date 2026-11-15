@@ -1,0 +1,3 @@
+42cbc928ad88e25ade1666846efcd12beba3e1f10876ca1981e1d91468913194  src-tauri/target/release/bundle/nsis/nexus_0.5.0_x64-setup.exe
+96f653be886c43bb5bfe1cd6f55902dc891f05f3d14bb09cb593778b59eb1402  src-tauri/target/release/bundle/msi/nexus_0.5.0_x64_en-US.msi
+2337e800a3c24ae1072143904c4f58ccc3da25356c0d17dfef4d994474b669a8  src-tauri/target/release/nexus.exe

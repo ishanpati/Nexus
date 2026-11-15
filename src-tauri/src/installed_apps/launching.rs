@@ -38,7 +38,7 @@ pub(super) fn valid_text(value: &str) -> bool {
         && !value.chars().any(char::is_control)
 }
 
-pub(super) fn validate(app: &InstalledApp) -> Result<(), String> {
+pub(crate) fn validate(app: &InstalledApp) -> Result<(), String> {
     let valid = match &app.launch {
         LaunchTarget::Shortcut { path, target, .. } => {
             valid_text(path)
@@ -78,21 +78,36 @@ pub async fn launch_installed_app(
 ) -> Result<LaunchOutcome, String> {
     let _guard = activity.inner().acquire()?;
     let cache = cache.inner().clone();
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        let (_, app) = cache.lookup(&app_id)?;
-        validate(&app)?;
-        #[cfg(windows)]
-        {
-            super::native::on_sta(move || super::native::launch(&app))
-        }
-        #[cfg(not(windows))]
-        {
-            Err("Application launching is supported on Windows only.".into())
-        }
-    })
-    .await
-    .map_err(|e| format!("Could not complete the launch request: {e}"))?;
+    let result = tauri::async_runtime::spawn_blocking(move || launch_catalog_app(&cache, &app_id))
+        .await
+        .map_err(|e| format!("Could not complete the launch request: {e}"))?;
     finish(|| result, || window.hide().map_err(|e| e.to_string()))
+}
+
+pub(crate) fn launch_catalog_app(cache: &CatalogCache, app_id: &str) -> Result<(), String> {
+    let (_, app) = cache.lookup(app_id)?;
+    validate(&app)?;
+    #[cfg(windows)]
+    {
+        super::native::on_sta(move || super::native::launch(&app))
+    }
+    #[cfg(not(windows))]
+    {
+        Err("Application launching is supported on Windows only.".into())
+    }
+}
+
+pub(crate) fn check_catalog_app(cache: &CatalogCache, app_id: &str) -> Result<(), String> {
+    let (_, app) = cache.lookup(app_id)?;
+    validate(&app)?;
+    #[cfg(windows)]
+    {
+        super::native::on_sta(move || super::native::check_available(&app))
+    }
+    #[cfg(not(windows))]
+    {
+        Err("Application launching is supported on Windows only.".into())
+    }
 }
 
 #[cfg(test)]

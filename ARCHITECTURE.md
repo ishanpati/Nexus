@@ -4,7 +4,98 @@ NEXUS is a Windows 11 Tauri 2 application with React/TypeScript presentation and
 Rust native operations. Production loads embedded local assets. There is no runtime
 AI, cloud API, application server, or generic shell executor.
 
+## v0.5 release boundaries
+
+`action_registry/` owns nine stable compiled registrations, generic parameter
+metadata, schema validation, prerequisite checks and native adapters. Frontend
+controls switch on parameter type, never action ID; a registration using existing
+types needs no editor rewrite. New parameter types require explicit editor support.
+Saved steps retain action ID/version/parameters and stable step UUIDs. Unsupported
+versions fail closed; future action transformations require explicit migrations.
+
+`workflows.rs` owns SQLite schema version 1, immediate transactions, the shared
+name/alias uniqueness index and revision conflicts. Save IPC also performs current
+reference checks and rejects file types forbidden by the runner. Reads annotate
+missing/obsolete references and sensitive file steps for repair; they never execute.
+Data lives at `app_local_data_dir()/workflows.sqlite3`, normally
+`%LOCALAPPDATA%\com.nexus.launcher\workflows.sqlite3`. Dev and production share it
+because their identifier is unchanged. Tests use temporary databases. SQLite
+reopen tests do not establish installed-app restart or installer upgrade behavior.
+
+`workflow_execution/` owns detached sequential workers and session-only run state.
+Whole-plan validation precedes effects; admission is guarded against cancellation.
+Each run binds expiring, single-use approval to its step and normalized action.
+Lock/sleep are final-only; file execution authority is never granted to workflows.
+App activation reports acceptance without readiness guarantees. Runs have no
+rollback, resume-after-process-exit, recursion, delay, or parallel-step facility.
+
+`workflow_studio.rs` owns one retained native window and a sequenced request mailbox.
+Studio close hides it after draft resolution. Launcher close always prevents native
+destruction: active runs cause hide; otherwise an existing Studio handles a `quit`
+intent through the same Save / Discard / Cancel guard, and Rust refuses that quit
+while runs remain active. With no Studio/run, launcher close exits the application.
+This preserves the main window used by global-shortcut and single-instance summon.
+
+Capabilities grant only event listen/unlisten to relevant local windows; repository,
+picker, Studio and runner IPC add Rust caller-label checks. No frontend shell,
+filesystem, opener, shortcut-registration or app-exit plugin permission is granted.
+The existing opener plugin remains installed without frontend grants. CSP remains
+disabled (`csp: null`), a known defense-in-depth gap; local text is rendered through
+React without raw HTML. Permissions/approval tokens are not protection against a
+fully compromised trusted frontend. No network runtime client is implemented.
+The SQLite document is plaintext and may contain private local references; logs do
+not deliberately print workflow documents. Back up stopped databases as described
+in README.md. Current release evidence and remaining risks: V05_VERIFICATION.md.
+
 ## Frontend
+
+Stage F integrates saved workflows into the existing launcher. `fileSearch.ts`
+parses exclusive `f ` / `w ` prefixes; bare letters remain ordinary app/command
+queries. `workflowSearch.ts` indexes saved UUIDs/names/aliases through `appSearch.ts`
+and owns generation-checked repository refreshes. `resultExecution.ts` dispatches
+workflow rows through the same Enter/click path. Only accepted starts clear input;
+the launcher stays available to show progress. Existing command success lifecycles
+and file/system confirmations are preserved.
+
+`useLauncherWorkflows.ts` attaches scoped repository/progress/shown/focus listeners
+before fetching snapshots, and refreshes run status once per second while active.
+`workflowRunService.ts` coalesces reads, merges by per-run sequence, gates starts
+and decisions synchronously, recovers lost start responses through list without
+retry, and keeps at most 128 snapshots while retaining active runs. Rust remains
+authoritative for execution, duplicate admission, cancellation and approval tokens.
+`WorkflowProgress.tsx` presents selected session runs, completed/current/failed
+steps, exact sensitive action details and explicit Approve / Deny / Cancel controls.
+Closing its presentation or resetting search never calls cancel. No dependencies,
+permissions, native execution paths or shortcut registrations are added. See
+[WORKFLOW_LAUNCHER.md](WORKFLOW_LAUNCHER.md).
+
+Stage E2 adds `SavedWorkflows.tsx`, using the existing typed repository service
+and `WorkflowEditor.tsx`. `studioNavigation.ts` sequences Rust navigation/close
+requests against editor saves; Save must succeed before resolving an accepted
+request. Cancel retains the current draft. The service serializes save/delete
+mutations, and Rust remains authoritative for revisions and delete confirmation.
+Unavailable saved steps retain their IDs and parameters under the existing storage
+policy. See [WORKFLOW_MANAGEMENT.md](WORKFLOW_MANAGEMENT.md).
+
+Stage D mounts `WorkflowStudio.tsx` only in the Rust-created `workflow-studio`
+webview. The launcher and audio overlay retain their own roots and lifecycle hooks.
+Studio owns its local draft, fetches repository data through typed IPC, and uses
+stable UUID edit routes. A retained, sequenced Rust request plus a listener-ready
+handshake carries navigation/close intent. Dirty drafts require an explicit discard
+choice; closing hides Studio and leaves the launcher and backend alive. Scoped
+`workflows-changed` events and focus/explicit refresh reload saved data without
+overwriting dirty drafts. See [WORKFLOW_STUDIO.md](WORKFLOW_STUDIO.md).
+
+Stage E1 mounts `WorkflowEditor.tsx` for create and UUID edit routes. Parameter
+controls are selected by registry schema type in `WorkflowParameters.tsx`, with no
+action-ID-specific forms. `workflowDraft.ts` keeps editable numeric text separate
+from typed persistence payloads. Step UUIDs preserve editing identity across moves
+and removals. Save gates protect against duplicate activations; confirmed responses
+update the baseline and revision. Dirty or saving drafts defer refresh/navigation.
+`workflow_picker.rs` exposes only file/folder selection to Studio via existing
+Windows COM bindings; it grants no frontend filesystem or shell capability.
+Rust checks schema, revision and live registry prerequisites before committing,
+without executing actions. See [WORKFLOW_EDITOR.md](WORKFLOW_EDITOR.md).
 
 - `App.tsx` owns input, selection, batches, feedback and confirmation presentation.
   `App.css` preserves the compact 650 × 310 design.
@@ -48,6 +139,26 @@ AI, cloud API, application server, or generic shell executor.
 - `hooks/useLauncherWindow.ts` owns input focus and narrow hide/drag requests.
 
 ## Native backend
+
+Stage C adds `workflow_execution/`: bounded backend-owned workers, immutable saved
+workflow snapshots, full-plan preflight, sequential registry dispatch, cancellation,
+and run/step-bound confirmation. Main-window-only IPC exposes start/status/list/
+cancel/decision; identifier-only progress events complement retained snapshots.
+Active runs survive hiding, closing the main window, and disconnected listeners.
+See [WORKFLOW_EXECUTION.md](WORKFLOW_EXECUTION.md) for the protocol and limitations.
+
+Stage B adds `workflows.rs`: lazy SQLite access on blocking workers, transactional
+versioned workflow documents, a unique name/alias index, optimistic revisions and
+availability annotations from Stage A. Database failures are returned through IPC
+without failing launcher startup. See [WORKFLOW_STORAGE.md](WORKFLOW_STORAGE.md).
+
+Stage A of v0.5 adds `action_registry/`: Rust-owned descriptors, a shared parameter
+schema validator, exact ID/version lookup, single-action dispatch and thin adapters
+to existing native services. `list_workflow_actions` exposes descriptive metadata
+only. Registry lock/sleep actions require confirmation and final-step placement;
+existing launcher commands keep their current behavior. Stage B/C now compose these
+adapters with storage and execution; Stage E1 adds the schema-driven editor. See
+[ACTION_REGISTRY.md](ACTION_REGISTRY.md) for contracts and extension guidance.
 
 `src-tauri/src/lib.rs` registers commands and managed state. Single-instance
 initialization comes first. `shortcut.rs` registers/cleans up Ctrl+Shift+Space and

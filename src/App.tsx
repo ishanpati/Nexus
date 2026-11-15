@@ -19,6 +19,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { canActivateFile, createFileActions, type FileAction } from "./fileActions";
 import { FileConfirmation } from "./components/FileConfirmation";
 import { recordFileOpen } from "./fileUsage";
+import { searchWorkflows } from "./workflowSearch";
+import { useLauncherWorkflows } from "./hooks/useLauncherWorkflows";
+import { WorkflowProgress } from "./components/WorkflowProgress";
+import { runActive } from "./services/workflowRunService";
 import "./App.css";
 
 const openFile = createFileActions(invoke);
@@ -36,6 +40,9 @@ function App() {
   const audioReadGeneration = useRef(0);
   const [commandError, setCommandError] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const workflows = useLauncherWorkflows();
   const [confirmation, setConfirmation] = useState<{ path: string; message: string } | null>(null);
   const [sleepConfirmation, setSleepConfirmation] = useState<{ token: string; message: string } | null>(null);
   const runningRef = useRef(false);
@@ -55,15 +62,17 @@ function App() {
   const appIndex = useMemo(() => indexApplications(catalog?.apps ?? []), [catalog]);
   const mode = searchMode(query);
   const fileMode = mode.kind === "files";
+  const workflowMode = mode.kind === "workflows";
   const fileQuery = mode.kind === "files" ? mode.query : null;
   const files = useFileSearch(fileQuery);
   const fileLoading = !!fileQuery && (files.loading || files.query !== fileQuery);
   const batchSize = fileMode ? FILE_BATCH_SIZE : RESULT_BATCH_SIZE;
   const appResults = useMemo(() => searchCommandsAndApps(query, appIndex, launchCounts), [query, appIndex, launchCounts]);
+  const workflowResults = useMemo(() => searchWorkflows(query, workflows.saved.items), [query, workflows.saved.items]);
   const fileResults: readonly ResultItem[] = useMemo(() => files.results.map((file) => ({
     kind: "file" as const, key: "file:" + file.full_path, label: file.filename, file,
   })), [files.results]);
-  const results: readonly ResultItem[] = fileMode ? (fileQuery ? fileResults : []) : appResults;
+  const results: readonly ResultItem[] = fileMode ? (fileQuery ? fileResults : []) : workflowMode ? workflowResults : appResults;
   const activeIndex = Math.min(selectedIndex, Math.max(0, results.length - 1));
   const selected = results[activeIndex];
   const audioSelected = selected?.kind === "system" && (selected.system.commandId === "volume"
@@ -76,7 +85,7 @@ function App() {
     setSelectedIndex(0);
     setVisibleCount(batchSize);
     resultsRef.current?.scrollTo({ top: 0 });
-  }, [query, fileMode ? files.results : catalog, batchSize]);
+  }, [query, fileMode ? files.results : workflowMode ? workflows.saved.items : catalog, batchSize]);
 
   useEffect(() => {
     if (selected) optionRefs.current.get(selected.key)?.scrollIntoView({ block: "nearest" });
@@ -93,6 +102,7 @@ function App() {
   useEffect(() => { void refreshAudioSummary(); return () => { audioReadGeneration.current++; }; }, []);
 
   function activate(result: ResultItem) {
+    if (result.kind === "workflow" && (workflows.saved.loading || workflows.saved.error)) return;
     if (result.kind === "file") {
       if (!canActivateFile(fileLoading, files.resultQuery, fileQuery)) return;
       void runFile(result.file, "open");
@@ -103,6 +113,7 @@ function App() {
 
   function resetLauncher() {
     resetExecution();
+    setProgressOpen(false);
     const token = sleepConfirmation?.token;
     if (token) void systemActions.cancel(token).catch((error) => setCommandError(systemActionError(error)));
   }
@@ -137,11 +148,15 @@ function App() {
       const outcome = await executeWithLifecycle(() => dispatchResult(result, {
         command: executeCommand, app: installedAppActions.launch, file: openFile,
         audio: executeAudio, system: systemActions.execute,
+        workflow: async id => {
+          const run = await workflows.runs.start(id);
+          setSelectedRunId(run.run_id); setProgressOpen(true);
+        },
       }, options), {
         // Commit the cleared input before Windows can suspend or lock this session.
         reset: resetBefore ? () => flushSync(resetExecution) : resetExecution,
         restore: () => { setQuery(originalQuery); setSelectedIndex(originalSelection); },
-        hide: () => invoke<void>("hide_launcher"), error: setCommandError,
+        hide: () => result.kind === "workflow" ? Promise.resolve() : invoke<void>("hide_launcher"), error: setCommandError,
       }, resetBefore);
       if (!outcome) return;
       if (outcome.status === "file_confirmation") setConfirmation(outcome);
@@ -164,6 +179,7 @@ function App() {
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.nativeEvent.isComposing) return;
+    if (progressOpen && ["ArrowDown", "ArrowUp", "Enter"].includes(event.key)) { event.preventDefault(); return; }
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       if (results.length === 0) return;
@@ -201,9 +217,11 @@ function App() {
         }}
       >
         <div className="brand"><span className="brand-mark" aria-hidden="true">N</span>NEXUS</div>
+        <button className="refresh-button" onMouseDown={event => event.stopPropagation()}
+          onClick={() => { setProgressOpen(value => !value); void workflows.runs.refresh(); }}>Workflow runs ({workflows.execution.runs.filter(runActive).length} active)</button>
         <span className="local-badge"><span aria-hidden="true" />LOCAL &amp; READY</span>
       </header>
-      <div className={"search-field" + (fileMode ? " file-mode" : "")}>
+      <div className={"search-field" + (fileMode ? " file-mode" : workflowMode ? " workflow-mode" : "")}>
         <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
           <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" />
         </svg>
@@ -211,11 +229,11 @@ function App() {
           ref={inputRef}
           autoFocus
           role="combobox"
-          aria-label={fileMode ? "Search files and folders" : "Search commands and applications"}
+          aria-label={fileMode ? "Search files and folders" : workflowMode ? "Search workflows" : "Search commands and applications"}
           aria-autocomplete="list"
-          aria-expanded={results.length > 0}
-          aria-controls="command-results"
-          aria-activedescendant={selected ? "result-" + activeIndex : undefined}
+          aria-expanded={!progressOpen && results.length > 0}
+          aria-controls={progressOpen ? undefined : "command-results"}
+          aria-activedescendant={!progressOpen && selected ? "result-" + activeIndex : undefined}
           autoComplete="off"
           spellCheck={false}
           readOnly={isRunning}
@@ -223,6 +241,7 @@ function App() {
           value={query}
           onChange={(event) => {
             setQuery(event.currentTarget.value);
+            setProgressOpen(false);
             setSelectedIndex(0);
             setMessage("");
             setCommandError("");
@@ -237,12 +256,19 @@ function App() {
           setVisibleCount((count) => Math.min(results.length, Math.max(count, shownCount) + batchSize));
         }
       }}>
-        <div className="section-label">{fileMode ? "FILES & FOLDERS" : query.trim() ? "RESULTS" : "SUGGESTED"}<span>{results.length}{fileMode && results.length === FILE_RESULT_LIMIT ? " (limit)" : ""}</span>
-          {fileMode ? <button className="refresh-button" disabled={!fileQuery || fileLoading} onClick={() => { files.retry(); inputRef.current?.focus(); }}>Retry search</button> : <button className="refresh-button" disabled={loading} onClick={() => { void refreshCatalog(); inputRef.current?.focus(); }}>
+        {progressOpen ? <WorkflowProgress runs={workflows.execution.runs} saved={workflows.saved.items} selectedId={selectedRunId}
+          busy={workflows.execution.busy} error={workflows.execution.error} onSelect={setSelectedRunId}
+          onClose={() => { setProgressOpen(false); inputRef.current?.focus(); }} onCancel={id => void workflows.runs.cancel(id)}
+          onDecide={(id, prompt, decision) => void workflows.runs.decide(id, prompt, decision)} onRefresh={() => void workflows.runs.refresh()} /> : <>
+        <div className="section-label">{fileMode ? "FILES & FOLDERS" : workflowMode ? "WORKFLOWS" : query.trim() ? "RESULTS" : "SUGGESTED"}<span>{results.length}{fileMode && results.length === FILE_RESULT_LIMIT ? " (limit)" : ""}</span>
+          {workflowMode ? <button className="refresh-button" disabled={workflows.saved.loading} onClick={() => void workflows.repository.refresh()}>Refresh workflows</button> : fileMode ? <button className="refresh-button" disabled={!fileQuery || fileLoading} onClick={() => { files.retry(); inputRef.current?.focus(); }}>Retry search</button> : <button className="refresh-button" disabled={loading} onClick={() => { void refreshCatalog(); inputRef.current?.focus(); }}>
             {loading ? (catalog ? "Refreshing…" : "Loading apps…") : catalogError ? "Retry apps" : "Refresh apps"}
           </button>}
         </div>
-        {fileMode ? <div className="catalog-status file-search-status" role="status">
+        {workflowMode ? <div className="catalog-status" role="status">{workflows.saved.loading ? "Loading workflows…" : workflows.saved.error
+          ? <span className="error">{workflows.saved.error}</span> : !results.length
+          ? workflows.saved.items.length ? "No matching workflows." : "No saved workflows. Use create workflow to make one."
+          : "Enter or click to run the selected workflow."}</div> : fileMode ? <div className="catalog-status file-search-status" role="status">
           {!fileQuery ? "Type a filename or folder name after f ." : fileLoading
             ? (results.length ? "Updating… Previous matches remain visible." : "Searching files and folders…")
             : files.error ? <span className="error">{files.error}</span>
@@ -253,7 +279,7 @@ function App() {
           {!loading && catalog?.apps.length === 0 && <p>No installed applications were found. Commands are still available.</p>}
           {catalog && (catalog.warnings.length > 0 || catalog.sources.some((source) => !source.completed)) && <p>Some applications could not be read. Showing available results; use Refresh apps to retry.</p>}
         </div>}
-        <ul id="command-results" role="listbox" aria-label={fileMode ? "Files and folders" : "Commands and applications"} aria-busy={isRunning || (fileMode && fileLoading)}>
+        <ul id="command-results" role="listbox" aria-label={fileMode ? "Files and folders" : workflowMode ? "Workflows" : "Commands and applications"} aria-busy={isRunning || (fileMode && fileLoading) || (workflowMode && workflows.saved.loading)}>
           {results.slice(0, shownCount).map((result, index) => (
             <li
               id={"result-" + index}
@@ -261,7 +287,7 @@ function App() {
               ref={(element) => { if (element) optionRefs.current.set(result.key, element); else optionRefs.current.delete(result.key); }}
               role="option"
               aria-selected={index === activeIndex}
-              aria-disabled={isRunning || (fileMode && fileLoading)}
+              aria-disabled={isRunning || (fileMode && fileLoading) || (workflowMode && workflows.saved.loading)}
               aria-posinset={index + 1}
               aria-setsize={results.length}
               className={"command-result" + (index === activeIndex ? " selected" : "")}
@@ -272,16 +298,17 @@ function App() {
               {result.kind === "file" ? <><FileResultContent file={result.file} query={files.resultQuery} />
                 <button className="reveal-button" title="Show in containing folder (Ctrl+Enter)" aria-label={"Show " + result.label + " in containing folder"}
                   disabled={isRunning || fileLoading} onClick={(event) => { event.stopPropagation(); if (canActivateFile(fileLoading, files.resultQuery, fileQuery)) void runFile(result.file, "reveal"); }}>Show</button></> : <>
-              <AppIcon appId={result.kind === "app" ? result.app.id : undefined} load={loadIcon} />
-              <span className="command-copy"><span className="command-title" title={result.label}>{result.label}</span><span className="command-description">{result.kind === "system" ? result.system.description : result.kind === "command" ? result.command.description : result.app.launch.method === "packaged_app" ? "Windows application" : "Installed application"}</span></span>
-              <span className="command-badge">{isRunning ? "Working…" : result.kind === "system" ? (result.system.status === "ready" ? (isAudioAction(result.system.action) ? "Audio" : result.system.requiresConfirmation ? "Confirm" : "System") : "Help") : result.kind === "app" ? "Application" : "Command"}</span>
+              {result.kind === "workflow" ? <span className="command-icon" aria-hidden="true">W</span> : <AppIcon appId={result.kind === "app" ? result.app.id : undefined} load={loadIcon} />}
+              <span className="command-copy"><span className="command-title" title={result.label}>{result.label}</span><span className="command-description">{result.kind === "workflow" ? result.workflow.description || "Saved workflow" : result.kind === "system" ? result.system.description : result.kind === "command" ? result.command.description : result.app.launch.method === "packaged_app" ? "Windows application" : "Installed application"}</span></span>
+              <span className="command-badge">{isRunning ? "Working…" : result.kind === "workflow" ? `${result.workflow.steps.length} action${result.workflow.steps.length === 1 ? "" : "s"}` : result.kind === "system" ? (result.system.status === "ready" ? (isAudioAction(result.system.action) ? "Audio" : result.system.requiresConfirmation ? "Confirm" : "System") : "Help") : result.kind === "app" ? "Application" : "Command"}</span>
               </>}
               <kbd className="enter-key" aria-hidden="true">↵</kbd>
             </li>
           ))}
         </ul>
         {shownCount < results.length && <button className="more-results" onClick={() => { setVisibleCount(shownCount + batchSize); inputRef.current?.focus(); }}>Show more ({results.length - shownCount} remaining)</button>}
-        {!fileMode && results.length === 0 && !loading && <p className="empty-state">No matching commands or applications. Try <strong>open notepad</strong>.</p>}
+        {!fileMode && !workflowMode && results.length === 0 && !loading && <p className="empty-state">No matching commands or applications. Try <strong>open notepad</strong>.</p>}
+        </>}
       </section>
       <p className={"status" + (commandError || windowError || shortcutNotice ? " error" : "")} role="status">{commandError || windowError || message || (audioSelected ? audioSummary : "") || shortcutNotice || (lastSuccess ? "Last action: " + lastSuccess : usageNotice)}</p>
       <footer className="footer">

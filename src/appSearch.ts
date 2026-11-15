@@ -1,13 +1,15 @@
 import type { CatalogApp } from "./appCatalog.ts";
 import type { Command } from "./commands.ts";
 import type { SystemSuggestion } from "./systemCommands.ts";
+import type { WorkflowView } from "./services/workflowStudioService.ts";
 
 export type SearchItem = {
   readonly key: string;
   readonly label: string;
   readonly aliases: readonly string[];
 } & ({ readonly kind: "app"; readonly app: CatalogApp } | { readonly kind: "command"; readonly command: Command }
-  | { readonly kind: "system"; readonly system: SystemSuggestion });
+  | { readonly kind: "system"; readonly system: SystemSuggestion }
+  | { readonly kind: "workflow"; readonly workflow: WorkflowView["workflow"] });
 
 export interface IndexedItem {
   readonly item: SearchItem;
@@ -38,6 +40,11 @@ export function indexApplications(apps: readonly CatalogApp[]): readonly Indexed
 
 export function indexCommand(command: Command): IndexedItem {
   return indexItem({ kind: "command", key: "command:" + command.id, label: command.label, aliases: command.aliases, command });
+}
+
+export function indexWorkflows(views: readonly WorkflowView[]): readonly IndexedItem[] {
+  return views.map(({ workflow }) => indexItem({ kind: "workflow", key: "workflow:" + workflow.id,
+    label: workflow.name, aliases: workflow.aliases, workflow }));
 }
 
 function indexItem(item: SearchItem): IndexedItem {
@@ -75,7 +82,7 @@ function match(index: IndexedItem, query: string): readonly [number, number] | n
     return query && query === system.query ? [system.status === "ready" && !system.partial ? 0 : 1, 0] : null;
   }
   if (!query || index.name === query || index.aliases.includes(query)) return [0, 0];
-  const names = index.item.kind === "command" ? [index.name, ...index.aliases] : [index.name];
+  const names = index.item.kind === "command" || index.item.kind === "workflow" ? [index.name, ...index.aliases] : [index.name];
   if (names.some((name) => name.startsWith(query))) return [1, 0];
   const terms = query.split(" ");
   if (index.words.some((_, start) => terms.every((term, offset) => index.words[start + offset]?.startsWith(term)))) return [2, 0];

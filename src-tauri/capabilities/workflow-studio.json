@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "workflow-studio",
+  "description": "Studio may listen for scoped navigation and repository changes; Rust owns window operations.",
+  "windows": ["workflow-studio"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}

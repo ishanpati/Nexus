@@ -1,5 +1,29 @@
 use super::*;
 use std::cell::RefCell;
+
+#[test]
+fn registry_system_adapter_rejects_unconfirmed_terminal_actions_before_native_calls() {
+    let service = SystemActions::default();
+    for id in ["lock", "sleep"] {
+        assert_eq!(
+            service
+                .execute_registered(serde_json::json!({"id":id,"args":{}}), false)
+                .unwrap_err()
+                .code,
+            ErrorCode::ConfirmationRequired
+        );
+    }
+    assert_eq!(
+        service
+            .execute_registered(
+                serde_json::json!({"id":"open_settings","args":{"page":"ms-settings:privacy"}}),
+                false
+            )
+            .unwrap_err()
+            .code,
+        ErrorCode::InvalidInput
+    );
+}
 #[derive(Default)]
 struct Fake {
     calls: RefCell<Vec<String>>,

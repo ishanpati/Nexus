@@ -1,6 +1,8 @@
 /** Each registered ID has an explicit argument type; Notepad accepts none. */
 export interface CommandArguments {
   open_notepad: Record<string, never>;
+  create_workflow: Record<string, never>;
+  edit_workflow: Record<string, never>;
 }
 
 export type CommandId = keyof CommandArguments;
@@ -17,6 +19,14 @@ export interface Command<Id extends CommandId = CommandId> {
 }
 
 export const commandRegistry = {
+  create_workflow: {
+    id: "create_workflow", label: "Create workflow", description: "Start a draft in Workflow Studio",
+    aliases: [], request: { id: "create_workflow", args: {} },
+  },
+  edit_workflow: {
+    id: "edit_workflow", label: "Edit workflow", description: "Browse saved workflows in Workflow Studio",
+    aliases: [], request: { id: "edit_workflow", args: {} },
+  },
   open_notepad: {
     id: "open_notepad",
     label: "Open Notepad",

@@ -44,11 +44,14 @@ test("equal fuzzy matches prefer fewer edits even with extreme usage", () => {
 
 test("v0.1 commands and partial aliases remain executable ahead of equally matching previews", () => {
   const apps = indexApplications([app("Notepad")]);
-  for (const query of ["", "open notepad", "notepad", "launch notepad", "launch note", "note"]) {
+  for (const query of ["open notepad", "notepad", "launch notepad", "launch note", "note"]) {
     const result = rankApplications([...findCommands(query).map(indexCommand), ...apps], query);
     assert.equal(result[0]?.kind, "command", query);
     assert.equal(result[0]?.command.id, "open_notepad");
   }
+  const suggestions = rankApplications([...findCommands("").map(indexCommand), ...apps], "");
+  assert.equal(suggestions[0].kind, "command");
+  assert.ok(suggestions.findIndex(item => item.command?.id === "open_notepad") < suggestions.findIndex(item => item.kind === "app"));
   const result = rankApplications(apps, "notepad")[0];
   assert.equal(result.kind, "app");
   assert.equal(result.command, undefined);

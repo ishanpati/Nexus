@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Local workflow databases and SQLite sidecars may contain private paths.
+*.sqlite3
+*.sqlite3-*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,0 +1,62 @@
+body.studio-body { padding: 0; background: #17171d; }
+.studio { height: 100%; display: flex; flex-direction: column; color: #ededf2; }
+.studio header { display: flex; align-items: center; justify-content: space-between; padding: 28px 32px 18px; border-bottom: 1px solid #36333f; }
+.studio-brand { color: #baacf0; letter-spacing: 2px; font-size: 11px; }
+.studio h1 { margin: 8px 0; font-size: 26px; }
+.studio h2 { font-size: 21px; }
+.studio header > span, .studio p, .studio footer { color: #b0abba; }
+.studio nav { display: flex; gap: 12px; padding: 18px 32px; background: #202027; }
+.studio button { padding: 9px 14px; color: #e4dcff; background: #302a40; border: 1px solid #5d506f; border-radius: 7px; }
+.studio button:hover { background: #403650; }
+.studio button:disabled { opacity: .5; cursor: default; }
+.studio button:focus-visible, .studio input:focus-visible { outline: 2px solid #c1b4ff; outline-offset: 3px; }
+.studio section { flex: 1; overflow: auto; padding: 12px 32px 28px; }
+.studio-list li { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 18px 0; border-bottom: 1px solid #36333f; }
+.studio-list strong, .studio-list p { overflow-wrap: anywhere; }
+.studio-list p { margin: 6px 0; }
+.studio-list small { color: #e8bf82; }
+.studio-name { display: flex; flex-direction: column; gap: 10px; margin: 24px 0; }
+.studio input { color: #f1ecff; background: #222129; border: 1px solid #635975; border-radius: 7px; padding: 12px; }
+.studio-empty { border: 1px dashed #4f485c; padding: 28px; margin-top: 24px; border-radius: 10px; color: #b0abba; }
+.studio-id { font-size: 12px; overflow-wrap: anywhere; }
+.studio footer { padding: 16px 32px; font-size: 12px; border-top: 1px solid #36333f; }
+.studio .studio-error { color: #ffb8b8; }
+.studio dialog { max-width: 480px; color: #ededf2; background: #24212d; border: 1px solid #817097; border-radius: 12px; padding: 24px; }
+.studio dialog::backdrop { background: #0009; }
+.studio dialog > div { display: flex; gap: 12px; justify-content: flex-end; }
+.studio-editor { border: 0; padding: 0; margin: 0; min-width: 0; }
+.studio-field { display: flex; flex-direction: column; gap: 8px; margin: 18px 0; min-width: 0; }
+.studio textarea, .studio select { font: inherit; color: #f1ecff; background: #222129; border: 1px solid #635975; border-radius: 7px; padding: 10px; min-width: 0; }
+.studio textarea { resize: vertical; }
+.studio input, .studio textarea, .studio select { box-sizing: border-box; width: 100%; }
+.studio input[type=checkbox] { width: auto; accent-color: #c1b4ff; }
+.studio label, .studio small { font-size: 12px; }
+.studio small { color: #b0abba; }
+.studio textarea:focus-visible, .studio select:focus-visible { outline: 2px solid #c1b4ff; outline-offset: 3px; }
+.studio [aria-invalid=true] { border-color: #ffb8b8; }
+.studio-steps-header, .studio-save { display: flex; align-items: center; gap: 14px; justify-content: space-between; margin-top: 24px; }
+.studio-steps { list-style: none; padding: 0; }
+.studio-step { background: #202027; border: 1px solid #494153; border-radius: 10px; padding: 18px; margin: 14px 0; overflow-wrap: anywhere; }
+.studio-step-title { display: flex; align-items: center; gap: 12px; }
+.studio-step-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.studio-step-form { border-top: 1px solid #494153; margin-top: 16px; padding-top: 4px; }
+.studio .studio-warning { color: #e8bf82; font-size: 12px; }
+.studio .studio-success { color: #a7dfc4; }
+.studio-action-picker { border: 1px solid #817097; border-radius: 10px; padding: 18px; margin-top: 14px; background: #24212d; }
+.studio-action-picker > input { margin-top: 8px; }
+.studio-action-picker ul { list-style: none; padding: 0; }
+.studio-action-picker li { margin: 8px 0; }
+.studio-action-picker li button { display: flex; align-items: center; gap: 16px; text-align: left; width: 100%; }
+.studio-action-picker small { display: block; margin-top: 5px; line-height: 1.5; }
+.studio-path-picker, .studio-app-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.studio-path-picker input { flex: 1; min-width: 150px; }
+.studio-app-picker select { width: 100%; }
+.studio-save { justify-content: flex-start; flex-wrap: wrap; padding-bottom: 12px; }
+.studio-list { list-style: none; padding: 0; }
+.studio-list-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.studio-list-tools label { width: 100%; }
+.studio-list-tools input { flex: 1; min-width: 160px; }
+.studio-workflow-info { flex: 1; min-width: 0; }
+.studio button.studio-workflow-name { padding: 0; border: 0; background: transparent; text-align: left; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.studio pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.studio dialog > div { flex-wrap: wrap; }

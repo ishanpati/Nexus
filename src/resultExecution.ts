@@ -17,10 +17,12 @@ export interface Handlers {
   file(file: Pick<FileResult, "full_path">, action: FileAction, confirmed?: boolean): Promise<FileOutcome>;
   audio(action: AudioAction): Promise<AudioState>;
   system(action: WindowsAction, token?: string): Promise<SystemOutcome>;
+  workflow(id: string): Promise<void>;
 }
 /** Executes the selected immutable row, never reparses the input. Used by click and Enter. */
 export async function dispatchResult(result: ResultItem, handlers: Handlers, options: ExecutionOptions = {}): Promise<Outcome> {
   switch (result.kind) {
+    case "workflow": await handlers.workflow(result.workflow.id); return { status: "success", message: "Started " + result.label };
     case "command": await handlers.command(result.command.id); return { status: "success" };
     case "app": {
       const outcome = await handlers.app(result.app.id);

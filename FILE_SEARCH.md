@@ -21,10 +21,10 @@ configuration returns an error rather than silently selecting a different tool.
 It does not search the current directory or scan the disk for executables.
 Configuration is environment-based for now; no settings interface was added.
 
-For this computer, start from the project root in PowerShell:
+For an ES installation in WindowsApps, start from the project root in PowerShell:
 
 ```powershell
-$env:NEXUS_ES_PATH = 'C:\Users\ishan\AppData\Local\Microsoft\WindowsApps\es.exe'
+$env:NEXUS_ES_PATH = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\es.exe'
 cargo run --locked --offline --manifest-path src-tauri/Cargo.toml --example search_files -- 'AGENTS.md' 8
 ```
 
