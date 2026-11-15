@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useState, useRef, type RefObject } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { dismissLauncher, summonLauncher } from "../resultExecution";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 
-export function useLauncherWindow(inputRef: RefObject<HTMLInputElement | null>) {
+export function useLauncherWindow(inputRef: RefObject<HTMLInputElement | null>, reset: () => void, onShown?: () => void) {
+  const resetRef = useRef(reset);
+  resetRef.current = reset;
+  const shownRef = useRef(onShown);
+  shownRef.current = onShown;
   const [windowError, setWindowError] = useState("");
   const [shortcutNotice, setShortcutNotice] = useState("");
   const startDrag = useCallback(async () => {
@@ -16,7 +21,7 @@ export function useLauncherWindow(inputRef: RefObject<HTMLInputElement | null>) 
   }, []);
   const hideWindow = useCallback(async () => {
     try {
-      await invoke("hide_launcher");
+      await dismissLauncher(() => resetRef.current(), () => invoke<void>("hide_launcher"));
       setWindowError("");
     } catch (error) {
       setWindowError("Could not hide NEXUS: " + String(error));
@@ -50,7 +55,7 @@ export function useLauncherWindow(inputRef: RefObject<HTMLInputElement | null>) 
       if (focused && !disposed) focusInput();
     }));
     trackListener(appWindow.listen("launcher-shown", () => {
-      if (!disposed) focusInput();
+      if (!disposed) { summonLauncher(() => resetRef.current(), focusInput); shownRef.current?.(); }
     }));
     trackListener(appWindow.listen<string>("launcher-error", ({ payload }) => {
       if (!disposed) setWindowError(payload);

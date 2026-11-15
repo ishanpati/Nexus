@@ -1,10 +1,13 @@
 mod active_monitor;
+pub mod audio;
+mod audio_feedback;
 mod commands;
 mod file_actions;
 pub mod file_search;
 pub mod installed_apps;
 mod launcher_window;
 mod shortcut;
+mod system_actions;
 
 use tauri::Manager;
 
@@ -28,6 +31,9 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            app.manage(audio_feedback::Feedback::default());
+            app.manage(std::sync::Arc::new(system_actions::SystemActions::default()));
+            app.manage(std::sync::Arc::new(audio::AudioService::default()));
             app.manage(std::sync::Arc::new(file_search::FileSearch::default()));
             app.manage(std::sync::Arc::new(installed_apps::CatalogCache::default()));
             app.manage(std::sync::Arc::new(
@@ -71,6 +77,10 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            audio_feedback::audio_feedback_state,
+            system_actions::execute_system_action,
+            system_actions::cancel_system_confirmation,
+            audio::execute_audio,
             commands::execute_command,
             file_search::search_files,
             file_actions::open_file_result,

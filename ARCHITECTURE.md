@@ -10,6 +10,29 @@ AI, cloud API, application server, or generic shell executor.
   `App.css` preserves the compact 650 × 310 design.
 - `commands.ts` and `services/commandService.ts` provide the typed built-in registry
   and narrow execution IPC. Open Notepad retains its original handler.
+- `systemCommands.ts` provides the pure v0.4 system-command registry/parser,
+  typed action validation, contextual suggestions and confirmation metadata.
+  `commandSearch.ts` combines these with built-ins and apps through the existing
+  `appSearch.ts` ranker. `services/audioService.ts` sends only validated audio
+  actions on explicit activation. `services/systemActionService.ts` sends closed
+  Settings/lock/sleep requests; `SleepConfirmation.tsx` requires a separate choice
+  using a one-use callback gate. `resultExecution.ts` dispatches selected rows for
+  both Enter and clicks, preserving catalog IDs and parsed arguments. Its shared
+  lifecycle clears/hides after success and retains the query on failure. Lock and
+  confirmed sleep reset before IPC, restoring the query if the action fails.
+  Escape and launcher-shown reset transient input state; ordinary focus/mode
+  changes do not. Audio does not update application launch usage.
+  A read-only audio snapshot on startup/summon supplies an explicitly labelled
+  last-read status for audio rows. Generations suppress obsolete reads; typing
+  does not perform writes or start status polling. Last-success feedback is kept
+  separately from the cleared query and confirmation state.
+  `AudioFeedback.tsx` is a second, preloaded, non-focusable window, not another
+  launcher instance. Rust `audio_feedback.rs` emits successful audio write results,
+  positions it at the bottom of the work area and hides it after 2.2 seconds.
+  Generation checks prevent an older timer hiding newer feedback. The window has
+  only event listen/unlisten permissions, uses local assets, and ignores pointer
+  input. An overlay failure never retries an already successful audio write.
+  Sleep confirmation is enforced again at the Rust boundary.
 - `appCatalog.ts` / `hooks/useAppCatalog.ts` coalesce loads and cache the catalog;
   refresh failure retains usable results. `appSearch.ts` ranks names/aliases locally.
 - `launchUsage.ts` records successful app launches in WebView local storage.
@@ -66,9 +89,32 @@ window; hide failure is a warning after success, not a reason to execute again.
 
 ## IPC and trust boundaries
 
+`system_actions/` owns a closed Settings/lock/sleep request enum. Four static
+`ms-settings:` URIs use the shared COM STA Shell worker; lock calls
+`LockWorkStation`. Sleep checks power capabilities and calls `SetSuspendState`
+only after consuming a current confirmation ticket (60-second lifetime). It
+temporarily enables the sleep privilege already assigned to the process token
+and restores its previous state; no elevation is requested. Cancellation and
+replacement invalidate tickets; failures never retry automatically. These actions
+share the existing launch activity guard, run off the UI thread, and hide only
+after Windows accepts the request. See SYSTEM_ACTIONS.md for API limitations.
+
+`audio/` implements a closed Rust audio request enum, argument validation and
+structured errors, plus `IAudioEndpointVolume` on a fresh COM STA thread. A shared
+service rejects concurrent requests; each operation resolves the default multimedia
+render endpoint afresh and verifies its identity before and after acting. Relative
+changes use the unrounded scalar and clamp to 0–1. Device/readback failures after
+a setter mark `may_have_changed`; there is no automatic retry. The command runs
+off the UI thread and never invokes a process. Read/status requests are read-only.
+Only two features on the existing Windows binding were enabled; no frontend
+permissions, package versions, or dependency versions were changed.
+
 | Command | Accepted input |
 | --- | --- |
 | `execute_command` | Registered ID and validated typed arguments |
+| `execute_audio` | Closed audio action ID and validated numeric/boolean/empty arguments |
+| `execute_system_action` | Closed Settings/lock/sleep action; optional single-use sleep ticket |
+| `cancel_system_confirmation` | Ticket to invalidate, with no native action |
 | `list_installed_apps`, `refresh_installed_apps` | None |
 | `launch_installed_app`, `get_installed_app_icon` | Catalog app ID |
 | `search_files` | Literal query and bounded result limit |
@@ -88,6 +134,13 @@ search results, and icons are in memory; usage counts are local. No file mutatio
 actions exist. Installer identity remains `com.nexus.launcher`.
 
 ## Verification
+
+System-command collisions are resolved by text tier first. Complete recognized
+system grammar is an exact match; incomplete/invalid hints have prefix-level
+priority. Equal text matches prefer working built-ins, then system commands, then
+apps. Colliding applications remain selectable, and exact app names beat incomplete
+system hints. Empty queries introduce no system results; system suggestions never
+use fuzzy matching. The existing `f ` mode is exclusive and bypasses this pipeline.
 
 Node's built-in runner covers matching, ranking, usage, catalog caching, search
 scheduling/staleness, path display/highlighting, and action IPC. Rust tests cover

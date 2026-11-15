@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.0 — Windows Control Center
+
+- Typed deterministic system-command registry, aliases, validation and contextual
+  suggestions integrated with existing app ranking; file mode remains exclusive.
+- Native Core Audio absolute/relative volume, mute/unmute and status. Relative
+  changes clamp; devices are resolved per request and failures are structured.
+- Four allowlisted Settings destinations, native workstation lock, and sleep
+  requiring a separate modal and expiring single-use Rust confirmation ticket.
+- Shared selected-result dispatch for clicks/Enter. Partial fixed commands now
+  execute their actions; numeric commands retain validated arguments.
+- Successful execution clears/hides; failures retain input. Escape and summon
+  reset input. Lock/confirmed sleep reset before IPC with restoration on failure.
+- Last-read audio state and retained last-action feedback in the existing footer.
+- Local non-activating volume/mute overlay with percentage and progress bar.
+  This is a NEXUS overlay, not Windows' private native media-key flyout.
+- Preserved application launching, icons, Everything file/folder search, strict
+  ranking, file confirmation, global shortcut, monitor placement and single instance.
+- Package versions aligned to 0.4.0 without dependency version changes. No new
+  runtime service, administrator requirement, cloud dependency or API key.
+- See V04_VERIFICATION.md for executed checks and outstanding Windows checks.
+
 ## 0.3.0 — 2026-11-14
 
 ### Added

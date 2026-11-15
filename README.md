@@ -1,14 +1,16 @@
-# NEXUS v0.3
+# NEXUS v0.4 — Windows Control Center
+
+Release checks and remaining manual verification: [V04_VERIFICATION.md](V04_VERIFICATION.md).
 
 NEXUS is a local-first universal command bar for Windows 11. Search and launch
-installed applications, or find files and folders through your local Everything
+installed applications, control Windows audio and Settings, or find files and folders through your local Everything
 index. It runs independently of Codex and ChatGPT, with no API key, AI model,
 subscription, cloud account, or application server.
 
 ## Install and run
 
 - Supported release target: Windows 11 x64 (including Intel Core Ultra systems).
-- Install `nexus_0.3.0_x64-setup.exe`, or the equivalent x64 MSI. Use one installer
+- Install `nexus_0.4.0_x64-setup.exe`, or the equivalent x64 MSI. Use one installer
   format. Close a running NEXUS with Alt+F4 before upgrading.
 - Microsoft Edge WebView2 Runtime is required. The installer can download it if
   absent; offline installation requires WebView2 to be installed beforehand.
@@ -107,10 +109,65 @@ See [FILE_SEARCH.md](FILE_SEARCH.md) for semantics and diagnostics,
 [CHANGELOG.md](CHANGELOG.md) for release changes, and
 [RELEASE_VERIFICATION.md](RELEASE_VERIFICATION.md) for actual verification results.
 
+## Windows controls (v0.4 in development)
+
+The `feature/windows-controls` branch recognizes these typed commands:
+
+- `volume 35` / `vol 35`: set volume, whole numbers from 0 to 100.
+- `volume +10`, `volume -10`, `volume up`, `volume down`: relative percentage-point
+  changes; up/down mean +10/-10. Explicit deltas must be between -100 and +100.
+- `mute`, `unmute`, `sound settings`, `wifi settings`, `bluetooth settings`,
+  `display settings`, `lock`, and `sleep`.
+- `volume status` / `audio status` / `mute status`: read volume and mute state.
+
+Names and whitespace are normalized. Decimal fractions, exponent/hex syntax,
+NaN/Infinity, trailing arguments and shell-like suffixes are rejected. Partial
+commands such as `volume` or `sound` show usage guidance. Aliases include
+`audio settings`, `wi-fi settings`, `bt settings`, `screen settings`, and `lock screen`.
+
+Audio commands have an **Audio** badge. Enter/click executes through Windows Core
+Audio. Successful actions clear the query and hide NEXUS; failures keep the query
+and show an error. Escape clears and hides, and summoning starts with an empty,
+focused input. Partial fixed-command suggestions (for example `disp` and `blu`)
+execute their selected actions; incomplete numeric commands remain help-only.
+Audio suggestions show the most recently read volume/mute state, refreshed when
+NEXUS opens. The footer retains the last successful action after reopening without
+restoring its query. External volume changes while NEXUS stays open are not polled;
+use `audio status` for an explicit fresh reading.
+Successful volume/mute changes also show a small NEXUS overlay at the bottom of
+the launcher's monitor for about two seconds. It displays the resulting percentage
+and mute state without stealing focus. This is NEXUS feedback, not Windows' native
+media-key flyout: no documented Core Audio flyout API was found, and NEXUS does not
+simulate media keys or depend on private Shell interfaces.
+Typing and suggestions never change audio. Relative changes clamp to 0–100;
+changing volume preserves mute, and mute/unmute preserves volume. The current
+default multimedia output is resolved for every operation. No administrator,
+shell, key simulation, or external executable is required.
+
+Settings and lock have a **System** badge and execute only on Enter/click.
+Settings destinations are allowlisted; lock uses the Windows workstation API.
+Sleep has a **Confirm** badge and opens a modal with Cancel focused first. Only
+**Sleep now** sends the single-use confirmation required by Rust. Successful
+requests hide NEXUS; failures display an error. No administrator prompt is requested.
+See [SYSTEM_ACTIONS.md](SYSTEM_ACTIONS.md) for restrictions and safe manual checks.
+Complete system commands win equal-name app collisions; exact apps beat partial
+system hints. Apps remain selectable below complete commands. File mode is unchanged.
+
+Manual checks: first run `audio status` and note the original state. Type `volume 35`
+without Enter and confirm nothing changes. Press Enter and check the reported state
+against Windows sound settings. Try `volume up`, `volume down`, `mute`, `unmute`,
+and `volume NaN`. Restore your original state afterwards. Switch the default output
+device and run `audio status` again. Check `open notepad`, `f nexus`, Escape and the
+global shortcut through their existing modes. See [AUDIO_CONTROLS.md](AUDIO_CONTROLS.md)
+for the implementation, actual test results and remaining manual checks.
+
 ## Development and release build
 
 Requires Node/npm, Rust, Windows MSVC build tools/SDK, WebView2, and the locked
 project dependencies. Engineering rules are in [AGENTS.md](AGENTS.md).
+No new installed runtime dependency is required for Windows controls. Audio needs
+an enabled default output and the Windows Audio service. Settings pages and sleep
+availability depend on hardware and Windows policy. Lock/sleep never request UAC.
 
 ```powershell
 npm.cmd ci

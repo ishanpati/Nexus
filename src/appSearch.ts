@@ -1,11 +1,13 @@
 import type { CatalogApp } from "./appCatalog.ts";
 import type { Command } from "./commands.ts";
+import type { SystemSuggestion } from "./systemCommands.ts";
 
 export type SearchItem = {
   readonly key: string;
   readonly label: string;
   readonly aliases: readonly string[];
-} & ({ readonly kind: "app"; readonly app: CatalogApp } | { readonly kind: "command"; readonly command: Command });
+} & ({ readonly kind: "app"; readonly app: CatalogApp } | { readonly kind: "command"; readonly command: Command }
+  | { readonly kind: "system"; readonly system: SystemSuggestion });
 
 export interface IndexedItem {
   readonly item: SearchItem;
@@ -43,6 +45,10 @@ function indexItem(item: SearchItem): IndexedItem {
   return { item, name, aliases: item.aliases.map(normalizeSearch), words: name.split(/[^\p{L}\p{N}]+/u).filter(Boolean) };
 }
 
+export function indexSystemCommand(system: SystemSuggestion): IndexedItem {
+  return indexItem({ kind: "system", key: "system:" + system.commandId, label: system.label, aliases: [], system });
+}
+
 /** Restricted Damerau-Levenshtein: insertion/deletion/substitution/transposition. */
 function editDistance(left: string, right: string): number {
   let previousPrevious: number[] = [];
@@ -62,6 +68,12 @@ function editDistance(left: string, right: string): number {
 }
 
 function match(index: IndexedItem, query: string): readonly [number, number] | null {
+  if (index.item.kind === "system") {
+    // Only the parser can recognize system grammar. Never fuzzy-match these rows,
+    // or reuse a suggestion for a different query. Exact apps beat partial hints.
+    const system = index.item.system;
+    return query && query === system.query ? [system.status === "ready" && !system.partial ? 0 : 1, 0] : null;
+  }
   if (!query || index.name === query || index.aliases.includes(query)) return [0, 0];
   const names = index.item.kind === "command" ? [index.name, ...index.aliases] : [index.name];
   if (names.some((name) => name.startsWith(query))) return [1, 0];
@@ -84,6 +96,7 @@ function match(index: IndexedItem, query: string): readonly [number, number] | n
 
 export function rankApplications(index: readonly IndexedItem[], query: string, counts: LaunchCounts = {}): readonly SearchItem[] {
   const normalized = normalizeSearch(query);
+  const kindPriority = (item: SearchItem) => item.kind === "command" ? 0 : item.kind === "system" ? 1 : 2;
   const bonus = (key: string) => {
     const count = counts[key];
     return Number.isFinite(count) && count > 0 ? Math.min(Math.log2(count + 1), 4) * 0.025 : 0;
@@ -92,8 +105,9 @@ export function rankApplications(index: readonly IndexedItem[], query: string, c
     const score = match(entry, normalized);
     return score ? [{ entry, tier: score[0], distance: score[1] }] : [];
   }).sort((a, b) => a.tier - b.tier || a.distance - b.distance
-    // Keep an equally matching working v0.1 command ahead of its app preview.
-    || Number(a.entry.item.kind === "app") - Number(b.entry.item.kind === "app")
+    // Equal text matches: working built-ins, explicit system commands, then apps.
+    // Partial system hints have a worse text tier than exact app matches.
+    || kindPriority(a.entry.item) - kindPriority(b.entry.item)
     || bonus(b.entry.item.key) - bonus(a.entry.item.key)
     || a.entry.name.localeCompare(b.entry.name) || a.entry.item.key.localeCompare(b.entry.item.key))
     .map(({ entry }) => entry.item);

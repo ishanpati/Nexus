@@ -1,0 +1,7 @@
+body.audio-overlay-body { padding: 0; background: transparent; }
+.audio-feedback { box-sizing: border-box; width: 320px; height: 88px; padding: 14px 20px; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; color: #edf0f7; background: #181b23; border: 1px solid #3d4352; border-radius: 16px; font: 14px "Segoe UI", sans-serif; user-select: none; }
+.audio-feedback-brand { color: #a3acc0; font-size: 10px; letter-spacing: 1px; }
+.audio-feedback strong { font-size: 16px; }
+.audio-feedback progress { grid-column: 1 / -1; width: 100%; height: 5px; border: 0; border-radius: 5px; overflow: hidden; }
+.audio-feedback progress::-webkit-progress-bar { background: #393e4a; }
+.audio-feedback progress::-webkit-progress-value { background: #92b8ff; }

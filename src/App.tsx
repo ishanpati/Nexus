@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { findCommands } from "./commands";
+import { flushSync } from "react-dom";
+import { searchCommandsAndApps } from "./commandSearch";
+import { dispatchResult, executeWithLifecycle, type ExecutionOptions, type ResultItem as ExecutableResult } from "./resultExecution";
+import { createSystemActions, systemActionError } from "./services/systemActionService";
+import { SleepConfirmation } from "./components/SleepConfirmation";
+import { createAudioActions, isAudioAction, audioStateMessage } from "./services/audioService";
 import { useLauncherWindow } from "./hooks/useLauncherWindow";
 import { executeCommand } from "./services/commandService";
 import { useAppCatalog } from "./hooks/useAppCatalog";
-import { indexApplications, indexCommand, moveSelection, rankApplications, RESULT_BATCH_SIZE, visibleResultCount, type SearchItem } from "./appSearch";
+import { indexApplications, moveSelection, RESULT_BATCH_SIZE, visibleResultCount } from "./appSearch";
 import { parseLaunchCounts, recordSuccessfulLaunch, USAGE_STORAGE_KEY } from "./launchUsage";
 import { installedAppActions } from "./services/installedAppService";
 import { AppIcon, makeIconLoader } from "./components/AppIcon";
@@ -16,17 +21,23 @@ import { FileConfirmation } from "./components/FileConfirmation";
 import { recordFileOpen } from "./fileUsage";
 import "./App.css";
 
-type ResultItem = SearchItem | { kind: "file"; key: string; label: string; file: FileResult };
 const openFile = createFileActions(invoke);
+type ResultItem = Exclude<ExecutableResult, { kind: "file" }> | { kind: "file"; key: string; label: string; file: FileResult };
+const executeAudio = createAudioActions(invoke);
+const systemActions = createSystemActions(invoke);
 
 function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [message, setMessage] = useState("");
+  const [lastSuccess, setLastSuccess] = useState("");
+  const [audioSummary, setAudioSummary] = useState("");
+  const audioReadGeneration = useRef(0);
   const [commandError, setCommandError] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [confirmation, setConfirmation] = useState<{ path: string; message: string } | null>(null);
+  const [sleepConfirmation, setSleepConfirmation] = useState<{ token: string; message: string } | null>(null);
   const runningRef = useRef(false);
   const resultsRef = useRef<HTMLElement>(null);
   const optionRefs = useRef(new Map<string, HTMLLIElement>());
@@ -36,7 +47,9 @@ function App() {
     try { return parseLaunchCounts(localStorage.getItem(USAGE_STORAGE_KEY)); }
     catch { return {}; }
   });
-  const { hideWindow, startDrag, windowError, shortcutNotice } = useLauncherWindow(inputRef);
+  const { hideWindow, startDrag, windowError, shortcutNotice } = useLauncherWindow(inputRef, resetLauncher, () => {
+    if (!runningRef.current) void refreshAudioSummary();
+  });
   const { catalog, loading, error: catalogError, refreshCatalog } = useAppCatalog();
   const loadIcon = useMemo(makeIconLoader, [catalog?.generation]);
   const appIndex = useMemo(() => indexApplications(catalog?.apps ?? []), [catalog]);
@@ -46,15 +59,15 @@ function App() {
   const files = useFileSearch(fileQuery);
   const fileLoading = !!fileQuery && (files.loading || files.query !== fileQuery);
   const batchSize = fileMode ? FILE_BATCH_SIZE : RESULT_BATCH_SIZE;
-  const appResults = useMemo(() => fileMode ? [] : rankApplications([
-    ...findCommands(query).map(indexCommand), ...appIndex,
-  ], query, launchCounts), [query, appIndex, launchCounts, fileMode]);
+  const appResults = useMemo(() => searchCommandsAndApps(query, appIndex, launchCounts), [query, appIndex, launchCounts]);
   const fileResults: readonly ResultItem[] = useMemo(() => files.results.map((file) => ({
     kind: "file" as const, key: "file:" + file.full_path, label: file.filename, file,
   })), [files.results]);
   const results: readonly ResultItem[] = fileMode ? (fileQuery ? fileResults : []) : appResults;
   const activeIndex = Math.min(selectedIndex, Math.max(0, results.length - 1));
   const selected = results[activeIndex];
+  const audioSelected = selected?.kind === "system" && (selected.system.commandId === "volume"
+    || (selected.system.status === "ready" && isAudioAction(selected.system.action)));
   const shownCount = fileMode
     ? Math.min(results.length, Math.max(visibleCount, Math.ceil((activeIndex + 1) / FILE_BATCH_SIZE) * FILE_BATCH_SIZE))
     : visibleResultCount(visibleCount, activeIndex, results.length);
@@ -69,6 +82,16 @@ function App() {
     if (selected) optionRefs.current.get(selected.key)?.scrollIntoView({ block: "nearest" });
   }, [selected?.key]);
 
+  async function refreshAudioSummary() {
+    const generation = ++audioReadGeneration.current;
+    setAudioSummary("");
+    try {
+      const state = await executeAudio({ id: "get_audio_state", args: {} });
+      if (generation === audioReadGeneration.current) setAudioSummary("Last read: " + audioStateMessage(state));
+    } catch { /* Status reads are optional; explicit actions show detailed native errors. */ }
+  }
+  useEffect(() => { void refreshAudioSummary(); return () => { audioReadGeneration.current++; }; }, []);
+
   function activate(result: ResultItem) {
     if (result.kind === "file") {
       if (!canActivateFile(fileLoading, files.resultQuery, fileQuery)) return;
@@ -78,62 +101,65 @@ function App() {
     void runResult(result);
   }
 
-  async function runFile(file: Pick<FileResult, "full_path">, action: FileAction, confirmed = false) {
-    if (runningRef.current) return;
-    runningRef.current = true;
-    setIsRunning(true);
-    setCommandError("");
-    setMessage(action === "reveal" ? "Showing item in File Explorer…" : "Opening item…");
-    try {
-      const outcome = await openFile(file, action, confirmed);
-      if (outcome.status === "confirmation_required") setConfirmation(outcome);
-      else {
-        if (action === "open") setUsageNotice(recordFileOpen(file.full_path) ?? "");
-        setConfirmation(null);
-        setQuery("");
-        setSelectedIndex(0);
-        if (outcome.warning) setCommandError(outcome.warning);
-      }
-    } catch (error) {
-      setCommandError(typeof error === "string" ? error : "Could not open this item. " + String(error));
-      inputRef.current?.focus();
-    } finally {
-      runningRef.current = false;
-      setIsRunning(false);
-      setMessage("");
-    }
+  function resetLauncher() {
+    resetExecution();
+    const token = sleepConfirmation?.token;
+    if (token) void systemActions.cancel(token).catch((error) => setCommandError(systemActionError(error)));
   }
 
-  async function runResult(result: SearchItem) {
-    // Ref closes the gap before React rerenders, preventing double click/key launches.
+  function resetExecution() {
+    setQuery(""); setSelectedIndex(0); setVisibleCount(RESULT_BATCH_SIZE);
+    setMessage(""); setCommandError(""); setConfirmation(null); setSleepConfirmation(null);
+    resultsRef.current?.scrollTo({ top: 0 });
+  }
+
+  function runFile(file: Pick<FileResult, "full_path">, action: FileAction, confirmed = false) {
+    return runResult({ kind: "file", key: "file:" + file.full_path, label: file.full_path, file }, { fileAction: action, confirmed });
+  }
+
+  function cancelSleep() {
+    const token = sleepConfirmation?.token;
+    setSleepConfirmation(null);
+    if (token) void systemActions.cancel(token).catch((error) => setCommandError(systemActionError(error)));
+    inputRef.current?.focus();
+  }
+
+  async function runResult(result: ExecutableResult, options: ExecutionOptions = {}) {
     if (runningRef.current) return;
-    runningRef.current = true;
-    setIsRunning(true);
-    setCommandError("");
-    setMessage("Opening " + result.label + "…");
+    runningRef.current = true; setIsRunning(true); setCommandError(""); setMessage("");
+    audioReadGeneration.current++;
+    setAudioSummary("");
+    const originalQuery = query;
+    const originalSelection = selectedIndex;
+    const resetBefore = result.kind === "system" && result.system.status === "ready"
+      && (result.system.action.id === "lock" || (result.system.action.id === "sleep" && !!options.token));
     try {
-      if (result.kind === "command") await executeCommand(result.command.id);
+      const outcome = await executeWithLifecycle(() => dispatchResult(result, {
+        command: executeCommand, app: installedAppActions.launch, file: openFile,
+        audio: executeAudio, system: systemActions.execute,
+      }, options), {
+        // Commit the cleared input before Windows can suspend or lock this session.
+        reset: resetBefore ? () => flushSync(resetExecution) : resetExecution,
+        restore: () => { setQuery(originalQuery); setSelectedIndex(originalSelection); },
+        hide: () => invoke<void>("hide_launcher"), error: setCommandError,
+      }, resetBefore);
+      if (!outcome) return;
+      if (outcome.status === "file_confirmation") setConfirmation(outcome);
+      else if (outcome.status === "sleep_confirmation") setSleepConfirmation(outcome);
+      else if (outcome.status === "help") setMessage(outcome.message);
       else {
-        const outcome = await installedAppActions.launch(result.app.id);
-        if (!outcome.launched) throw new Error("Windows did not confirm opening the application.");
+        setLastSuccess(outcome.message ?? ("Opened " + result.label));
         if (outcome.warning) setCommandError(outcome.warning);
+        if (outcome.message) setMessage(outcome.message);
+        if (result.kind === "file" && options.fileAction !== "reveal") setUsageNotice(recordFileOpen(result.file.full_path) ?? "");
+        if (result.kind === "app" || result.kind === "command") {
+          const nextCounts = recordSuccessfulLaunch(launchCounts, result.key);
+          setLaunchCounts(nextCounts);
+          try { localStorage.setItem(USAGE_STORAGE_KEY, JSON.stringify(nextCounts)); setUsageNotice(""); }
+          catch { setUsageNotice("Launch history is available for this session only."); }
+        }
       }
-      const nextCounts = recordSuccessfulLaunch(launchCounts, result.key);
-      setLaunchCounts(nextCounts);
-      try {
-        localStorage.setItem(USAGE_STORAGE_KEY, JSON.stringify(nextCounts));
-        setUsageNotice("");
-      } catch { setUsageNotice("Launch history is available for this session only."); }
-      setQuery("");
-      setSelectedIndex(0);
-    } catch (error) {
-      setCommandError(typeof error === "string" ? error : "Could not open " + result.label + ". " + String(error));
-    } finally {
-      runningRef.current = false;
-      setIsRunning(false);
-      setMessage("");
-      inputRef.current?.focus();
-    }
+    } finally { runningRef.current = false; setIsRunning(false); inputRef.current?.focus(); }
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -156,6 +182,11 @@ function App() {
 
   return (
     <main className="launcher" aria-label="NEXUS command bar">
+      {sleepConfirmation && <SleepConfirmation key={sleepConfirmation.token} message={sleepConfirmation.message}
+        onCancel={cancelSleep} onConfirm={() => { const token = sleepConfirmation.token; setSleepConfirmation(null); void runResult({ kind: "system", key: "system:sleep", label: "Sleep", aliases: [], system: {
+          commandId: "sleep", label: "Sleep", description: "", query, status: "ready",
+          action: { id: "sleep", args: {} }, requiresConfirmation: true,
+        } }, { token }); }} />}
       {confirmation && <FileConfirmation path={confirmation.path} message={confirmation.message}
         onCancel={() => { setConfirmation(null); inputRef.current?.focus(); }}
         onConfirm={() => { const path = confirmation.path; setConfirmation(null); void runFile({ full_path: path }, "open", true); }} />}
@@ -242,8 +273,8 @@ function App() {
                 <button className="reveal-button" title="Show in containing folder (Ctrl+Enter)" aria-label={"Show " + result.label + " in containing folder"}
                   disabled={isRunning || fileLoading} onClick={(event) => { event.stopPropagation(); if (canActivateFile(fileLoading, files.resultQuery, fileQuery)) void runFile(result.file, "reveal"); }}>Show</button></> : <>
               <AppIcon appId={result.kind === "app" ? result.app.id : undefined} load={loadIcon} />
-              <span className="command-copy"><span className="command-title" title={result.label}>{result.label}</span><span className="command-description">{result.kind === "command" ? result.command.description : result.app.launch.method === "packaged_app" ? "Windows application" : "Installed application"}</span></span>
-              <span className="command-badge">{isRunning ? "Opening…" : result.kind === "app" ? "Application" : "Command"}</span>
+              <span className="command-copy"><span className="command-title" title={result.label}>{result.label}</span><span className="command-description">{result.kind === "system" ? result.system.description : result.kind === "command" ? result.command.description : result.app.launch.method === "packaged_app" ? "Windows application" : "Installed application"}</span></span>
+              <span className="command-badge">{isRunning ? "Working…" : result.kind === "system" ? (result.system.status === "ready" ? (isAudioAction(result.system.action) ? "Audio" : result.system.requiresConfirmation ? "Confirm" : "System") : "Help") : result.kind === "app" ? "Application" : "Command"}</span>
               </>}
               <kbd className="enter-key" aria-hidden="true">↵</kbd>
             </li>
@@ -252,7 +283,7 @@ function App() {
         {shownCount < results.length && <button className="more-results" onClick={() => { setVisibleCount(shownCount + batchSize); inputRef.current?.focus(); }}>Show more ({results.length - shownCount} remaining)</button>}
         {!fileMode && results.length === 0 && !loading && <p className="empty-state">No matching commands or applications. Try <strong>open notepad</strong>.</p>}
       </section>
-      <p className={"status" + (commandError || windowError || shortcutNotice ? " error" : "")} role="status">{commandError || windowError || message || shortcutNotice || usageNotice}</p>
+      <p className={"status" + (commandError || windowError || shortcutNotice ? " error" : "")} role="status">{commandError || windowError || message || (audioSelected ? audioSummary : "") || shortcutNotice || (lastSuccess ? "Last action: " + lastSuccess : usageNotice)}</p>
       <footer className="footer">
         <span className="keyboard-hints"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> open</span></span>
         <span>Ctrl + Shift + Space</span>
