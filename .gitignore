@@ -1,28 +1,75 @@
-# Logs
-logs
+# Logs and temporary files
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+*.tmp
+*.temp
+*.bak
+*~
 
-node_modules
-dist
-dist-ssr
+# Node, Vite, and TypeScript output (keep package-lock.json)
+node_modules/
+dist/
+dist-ssr/
+.vite/
+.vite-temp/
+coverage/
+*.tsbuildinfo
+/vite.config.js
+/vite.config.d.ts
 *.local
 
-# Local workflow databases and SQLite sidecars may contain private paths.
+# Cargo and Tauri output (keep Cargo.lock and native icons/capabilities)
+/target/
+/src-tauri/target/
+/src-tauri/gen/schemas/
+
+# Extracted local WiX cache; Tauri manages its own installer-tool cache.
+/WixTools314/
+*.wixobj
+*.wixpdb
+*.wixout
+*.pdb
+*.ilk
+*.idb
+*.obj
+
+# Local databases and SQLite sidecars may contain private paths.
+*.sqlite
+*.sqlite-*
 *.sqlite3
 *.sqlite3-*
+*.db
+*.db-*
+
+# Local environment, credentials, and agent-generated backups
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+/.token-optimizer-backups/
+/src-tauri/Finance_record.txt
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+/.vscode/*
+!/.vscode/extensions.json
+.idea/
+.vs/
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.suo
+*.user
+*.userosscache
+*.sln.docstates
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?

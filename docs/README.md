@@ -29,6 +29,8 @@ describes the v0.5 boundaries, module responsibilities, local data flow, and IPC
 
 - [Development and release builds](USER_GUIDE.md#development-and-release-build):
   prerequisites, commands, offline caches, and installer output locations.
+- [Repository maintenance](development/REPOSITORY_MAINTENANCE.md): tracked-file
+  boundaries, installer caches, safe housekeeping, and the hygiene audit.
 - [Engineering rules](../AGENTS.md): stack, execution boundaries, repository layout,
   and required checks. Run command examples from the repository root.
 
