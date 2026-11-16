@@ -68,7 +68,7 @@ validation enabled:
 Command: `npm.cmd run tauri build -- --bundles nsis,msi -- --locked --offline`.
 The process also set `CARGO_NET_OFFLINE=true`; cached installer tooling was used.
 The second optimized build completed in 2m 59s. SHA-256 hashes are recorded in
-RELEASE_SHA256.txt. Validation was not disabled or bypassed.
+[RELEASE_SHA256.txt](../releases/RELEASE_SHA256.txt). Validation was not disabled or bypassed.
 
 Installers are unsigned. WebView2 is required; setup may download it if missing.
 Offline installation therefore requires WebView2 already installed. Everything/ES
@@ -93,6 +93,6 @@ marked passed until a result is observed or reported by the product owner:
    the prior installed version. Fresh-install/upgrade/uninstall tests are pending;
    merely building a bundle does not verify installation.
 
-Known limitations are documented in README.md and FILE_SEARCH.md. Release artifacts
+Known limitations are documented in [README.md](../../README.md) and [FILE_SEARCH.md](../features/file-search/FILE_SEARCH.md). Release artifacts
 may be built and shared for testing, but these pending checks prevent claiming a
 fully verified release on all requested behaviors.

@@ -17,7 +17,7 @@
 - Added user workflow instructions, backup/restore and shared dev/production data
   warnings; replaced machine-specific setup paths with portable examples.
 - Stage G automated results, actual packaging artifacts, known limitations and
-  required installed-app/offline/manual checks: [V05_VERIFICATION.md](V05_VERIFICATION.md).
+  required installed-app/offline/manual checks: [V05_VERIFICATION.md](docs/verification/V05_VERIFICATION.md).
   This is not a declaration of completed desktop release acceptance.
 
 ## 0.5 development - Stage F launcher workflow search and execution UI
@@ -33,7 +33,7 @@
   focus and manual refresh reflect renames/deletions without restarting.
 - Existing Studio commands, apps, file mode, system controls and shortcut preserved.
 - No dependencies, lockfile edits, new runtime services or AI automation.
-- Verification: [WORKFLOW_LAUNCHER.md](WORKFLOW_LAUNCHER.md).
+- Verification: [WORKFLOW_LAUNCHER.md](docs/features/workflows/WORKFLOW_LAUNCHER.md).
 
 ## 0.5 development - Stage E2 saved workflow management
 
@@ -44,7 +44,7 @@
 - Save / Discard / Cancel for navigation and Studio close, including launcher requests.
 - Keep drafts on failed/stale/deleted saves; guard concurrent save/delete activations.
 - No dependencies, lockfile changes, execution UI or launcher `w` search added by E2.
-- Verification: [WORKFLOW_MANAGEMENT.md](WORKFLOW_MANAGEMENT.md).
+- Verification: [WORKFLOW_MANAGEMENT.md](docs/features/workflows/WORKFLOW_MANAGEMENT.md).
 
 ## 0.5 development - Stage E1 dynamic workflow editor
 
@@ -55,7 +55,7 @@
 - Inline validation, unsaved changes, optimistic revisions and duplicate-save gates.
 - Save-time Rust reference checks catch disappeared app/path selections without execution.
 - No new dependencies, workflow-list management, execution UI or launcher `w` search.
-- Verification and manual checklist: [WORKFLOW_EDITOR.md](WORKFLOW_EDITOR.md).
+- Verification and manual checklist: [WORKFLOW_EDITOR.md](docs/features/workflows/WORKFLOW_EDITOR.md).
 
 ## 0.5 development - Stage D separate Workflow Studio
 
@@ -65,7 +65,7 @@
 - Cancellable unsaved-draft navigation and close; closing Studio keeps NEXUS alive.
 - Repository-backed views with scoped save/delete notifications and refresh.
 - No complete step editor, save/delete controls, execution UI, or new dependencies.
-- Verification and manual Windows checklist: [WORKFLOW_STUDIO.md](WORKFLOW_STUDIO.md).
+- Verification and manual Windows checklist: [WORKFLOW_STUDIO.md](docs/features/workflows/WORKFLOW_STUDIO.md).
 
 ## 0.5 development - Stage C workflow execution
 
@@ -79,7 +79,7 @@
 - Reject recursive workflow calls and executable/script-like file opens. Catalog
   app launches report Windows acceptance without claiming application readiness.
 - Mock execution tests never lock or suspend Windows. No workflow UI or search.
-  Protocol, verification and limitations: [WORKFLOW_EXECUTION.md](WORKFLOW_EXECUTION.md).
+  Protocol, verification and limitations: [WORKFLOW_EXECUTION.md](docs/features/workflows/WORKFLOW_EXECUTION.md).
 
 ## 0.4.0 — Windows Control Center
 
@@ -100,7 +100,7 @@
   ranking, file confirmation, global shortcut, monitor placement and single instance.
 - Package versions aligned to 0.4.0 without dependency version changes. No new
   runtime service, administrator requirement, cloud dependency or API key.
-- See V04_VERIFICATION.md for executed checks and outstanding Windows checks.
+- See [V04_VERIFICATION.md](docs/verification/V04_VERIFICATION.md) for executed checks and outstanding Windows checks.
 
 ## 0.3.0 — 2026-11-14
 
@@ -138,7 +138,7 @@
   if absent; install it beforehand for offline setup.
 - Literal indexed-path search only; no advanced syntax, named instances, content
   search, file mutations, signing, tray icon, or automatic updates.
-- RELEASE_VERIFICATION.md records executed checks and outstanding desktop checks.
+- [RELEASE_VERIFICATION.md](docs/verification/RELEASE_VERIFICATION.md) records executed checks and outstanding desktop checks.
 
 ## 0.2 — development milestone
 

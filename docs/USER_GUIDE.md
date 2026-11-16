@@ -1,6 +1,6 @@
 # NEXUS user guide
 
-Detailed controls, setup, workflows, backup, troubleshooting, and development instructions for the v0.5.0 release candidate. For the product overview, return to the [README](../README.md). Release acceptance remains pending; see [v0.5 verification](../V05_VERIFICATION.md).
+Detailed controls, setup, workflows, backup, troubleshooting, and development instructions for the v0.5.0 release candidate. For the product overview, return to the [README](../README.md). Release acceptance remains pending; see [v0.5 verification](verification/V05_VERIFICATION.md).
 
 ## Install and run
 
@@ -81,7 +81,7 @@ Location and previous opens only break ties within a match tier. Windows Known
 Folders supply Desktop/Documents/Downloads locations, including OneDrive redirection.
 Optional `NEXUS_PROJECT_DIRS` contains semicolon-separated absolute project roots
 (up to 32); set it before starting NEXUS. No file fuzzy search is enabled.
-See [FILE_SEARCH_RANKING.md](../FILE_SEARCH_RANKING.md) for limits and measured latency.
+See [FILE_SEARCH_RANKING.md](features/file-search/FILE_SEARCH_RANKING.md) for limits and measured latency.
 
 Files open with their Windows default association; folders open in Explorer.
 Executables, scripts, shortcuts, installers, macro-capable and unknown formats
@@ -102,10 +102,10 @@ Limitations:
   shell extensions may fail. Sensitive-file confirmation is not malware scanning.
 - No installer signing, tray icon, automatic startup, or auto-update is included.
 
-See [FILE_SEARCH.md](../FILE_SEARCH.md) for semantics and diagnostics,
-[ARCHITECTURE.md](../ARCHITECTURE.md) for module boundaries,
+See [FILE_SEARCH.md](features/file-search/FILE_SEARCH.md) for semantics and diagnostics,
+[ARCHITECTURE.md](architecture/ARCHITECTURE.md) for module boundaries,
 [CHANGELOG.md](../CHANGELOG.md) for release changes, and
-[RELEASE_VERIFICATION.md](../RELEASE_VERIFICATION.md) for actual verification results.
+[RELEASE_VERIFICATION.md](verification/RELEASE_VERIFICATION.md) for actual verification results.
 
 ## Creating and managing workflows
 
@@ -135,7 +135,7 @@ does not cancel an active run. Cancellation stops future steps; admitted Windows
 requests cannot be recalled, and completed steps are not undone. Run history and
 approvals last only for the current process; interrupted runs do not resume.
 
-Workflows support the nine built-in [Action Registry](../ACTION_REGISTRY.md) actions:
+Workflows support the nine built-in [Action Registry](architecture/ACTION_REGISTRY.md) actions:
 catalog app launch, document/folder opening, volume/relative volume/mute, four
 allowlisted Settings pages, lock and sleep. Lock/sleep must be last and require
 fresh explicit approval bound to that run and step. Workflow file steps reject
@@ -148,8 +148,8 @@ Rust owns stable action IDs, parameter schemas, validation and confirmation poli
 New compiled actions using existing parameter types need no editor rewrite.
 Unsupported action versions and future parameter types fail safely and retain
 saved data; automatic action migrations are not provided. See
-[storage](../WORKFLOW_STORAGE.md), [execution](../WORKFLOW_EXECUTION.md) and
-[Studio](../WORKFLOW_STUDIO.md) for details.
+[storage](features/workflows/WORKFLOW_STORAGE.md), [execution](features/workflows/WORKFLOW_EXECUTION.md) and
+[Studio](features/workflows/WORKFLOW_STUDIO.md) for details.
 
 ## Workflow data and backup
 
@@ -210,7 +210,7 @@ Settings destinations are allowlisted; lock uses the Windows workstation API.
 Sleep has a **Confirm** badge and opens a modal with Cancel focused first. Only
 **Sleep now** sends the single-use confirmation required by Rust. Successful
 requests hide NEXUS; failures display an error. No administrator prompt is requested.
-See [SYSTEM_ACTIONS.md](../SYSTEM_ACTIONS.md) for restrictions and safe manual checks.
+See [SYSTEM_ACTIONS.md](features/SYSTEM_ACTIONS.md) for restrictions and safe manual checks.
 Complete system commands win equal-name app collisions; exact apps beat partial
 system hints. Apps remain selectable below complete commands. File mode is unchanged.
 
@@ -234,7 +234,7 @@ without Enter and confirm nothing changes. Press Enter and check the reported st
 against Windows sound settings. Try `volume up`, `volume down`, `mute`, `unmute`,
 and `volume NaN`. Restore your original state afterwards. Switch the default output
 device and run `audio status` again. Check `open notepad`, `f nexus`, Escape and the
-global shortcut through their existing modes. See [AUDIO_CONTROLS.md](../AUDIO_CONTROLS.md)
+global shortcut through their existing modes. See [AUDIO_CONTROLS.md](features/AUDIO_CONTROLS.md)
 for the implementation, actual test results and remaining manual checks.
 
 ## Development and release build

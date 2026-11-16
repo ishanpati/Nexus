@@ -106,7 +106,7 @@ was performed by packaging. Frontend build passed on both attempts.
 | `src-tauri/target/release/bundle/msi/nexus_0.5.0_x64_en-US.msi` | 3,457,024 |
 | `src-tauri/target/release/nexus.exe` | 6,929,920 |
 
-SHA-256 hashes are in [V05_SHA256.txt](V05_SHA256.txt), computed after the successful
+SHA-256 hashes are in [V05_SHA256.txt](../releases/V05_SHA256.txt), computed after the successful
 retry. These installers are unsigned. Local ignored logs are `stage-g-build.log`
 and `stage-g-build-approved.log`; they include build-machine paths and are not
 release content. Older versioned bundles in the same output directories are not

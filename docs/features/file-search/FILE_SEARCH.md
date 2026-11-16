@@ -47,7 +47,7 @@ const results = await invoke('search_files', { query: 'meeting notes', limit: 8 
 - Searches are case-insensitive literal text. The v0.3.1 working branch prioritizes
   filenames/stems using separate bounded folder/file passes before path fallback.
   Path separators select explicit path search. Leading/trailing whitespace is
-  trimmed; `meeting notes` remains one literal phrase. See FILE_SEARCH_RANKING.md.
+  trimmed; `meeting notes` remains one literal phrase. See [FILE_SEARCH_RANKING.md](FILE_SEARCH_RANKING.md).
 - Every character is encoded as a regex hex literal and passed as one `-regex`
   argument. Everything operators such as `ext:pdf`, `!`, `|`, and `*` are literal
   characters, not an advanced search language. Even `-exit` is search data.

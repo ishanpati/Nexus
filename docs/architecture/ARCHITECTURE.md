@@ -45,7 +45,7 @@ React without raw HTML. Permissions/approval tokens are not protection against a
 fully compromised trusted frontend. No network runtime client is implemented.
 The SQLite document is plaintext and may contain private local references; logs do
 not deliberately print workflow documents. Back up stopped databases as described
-in README.md. Current release evidence and remaining risks: V05_VERIFICATION.md.
+in the [user guide](../USER_GUIDE.md#workflow-data-and-backup). Current release evidence and remaining risks: [V05_VERIFICATION.md](../verification/V05_VERIFICATION.md).
 
 ## Frontend
 
@@ -67,7 +67,7 @@ authoritative for execution, duplicate admission, cancellation and approval toke
 steps, exact sensitive action details and explicit Approve / Deny / Cancel controls.
 Closing its presentation or resetting search never calls cancel. No dependencies,
 permissions, native execution paths or shortcut registrations are added. See
-[WORKFLOW_LAUNCHER.md](WORKFLOW_LAUNCHER.md).
+[WORKFLOW_LAUNCHER.md](../features/workflows/WORKFLOW_LAUNCHER.md).
 
 Stage E2 adds `SavedWorkflows.tsx`, using the existing typed repository service
 and `WorkflowEditor.tsx`. `studioNavigation.ts` sequences Rust navigation/close
@@ -75,7 +75,7 @@ requests against editor saves; Save must succeed before resolving an accepted
 request. Cancel retains the current draft. The service serializes save/delete
 mutations, and Rust remains authoritative for revisions and delete confirmation.
 Unavailable saved steps retain their IDs and parameters under the existing storage
-policy. See [WORKFLOW_MANAGEMENT.md](WORKFLOW_MANAGEMENT.md).
+policy. See [WORKFLOW_MANAGEMENT.md](../features/workflows/WORKFLOW_MANAGEMENT.md).
 
 Stage D mounts `WorkflowStudio.tsx` only in the Rust-created `workflow-studio`
 webview. The launcher and audio overlay retain their own roots and lifecycle hooks.
@@ -84,7 +84,7 @@ stable UUID edit routes. A retained, sequenced Rust request plus a listener-read
 handshake carries navigation/close intent. Dirty drafts require an explicit discard
 choice; closing hides Studio and leaves the launcher and backend alive. Scoped
 `workflows-changed` events and focus/explicit refresh reload saved data without
-overwriting dirty drafts. See [WORKFLOW_STUDIO.md](WORKFLOW_STUDIO.md).
+overwriting dirty drafts. See [WORKFLOW_STUDIO.md](../features/workflows/WORKFLOW_STUDIO.md).
 
 Stage E1 mounts `WorkflowEditor.tsx` for create and UUID edit routes. Parameter
 controls are selected by registry schema type in `WorkflowParameters.tsx`, with no
@@ -95,7 +95,7 @@ update the baseline and revision. Dirty or saving drafts defer refresh/navigatio
 `workflow_picker.rs` exposes only file/folder selection to Studio via existing
 Windows COM bindings; it grants no frontend filesystem or shell capability.
 Rust checks schema, revision and live registry prerequisites before committing,
-without executing actions. See [WORKFLOW_EDITOR.md](WORKFLOW_EDITOR.md).
+without executing actions. See [WORKFLOW_EDITOR.md](../features/workflows/WORKFLOW_EDITOR.md).
 
 - `App.tsx` owns input, selection, batches, feedback and confirmation presentation.
   `App.css` preserves the compact 650 × 310 design.
@@ -145,12 +145,12 @@ workflow snapshots, full-plan preflight, sequential registry dispatch, cancellat
 and run/step-bound confirmation. Main-window-only IPC exposes start/status/list/
 cancel/decision; identifier-only progress events complement retained snapshots.
 Active runs survive hiding, closing the main window, and disconnected listeners.
-See [WORKFLOW_EXECUTION.md](WORKFLOW_EXECUTION.md) for the protocol and limitations.
+See [WORKFLOW_EXECUTION.md](../features/workflows/WORKFLOW_EXECUTION.md) for the protocol and limitations.
 
 Stage B adds `workflows.rs`: lazy SQLite access on blocking workers, transactional
 versioned workflow documents, a unique name/alias index, optimistic revisions and
 availability annotations from Stage A. Database failures are returned through IPC
-without failing launcher startup. See [WORKFLOW_STORAGE.md](WORKFLOW_STORAGE.md).
+without failing launcher startup. See [WORKFLOW_STORAGE.md](../features/workflows/WORKFLOW_STORAGE.md).
 
 Stage A of v0.5 adds `action_registry/`: Rust-owned descriptors, a shared parameter
 schema validator, exact ID/version lookup, single-action dispatch and thin adapters
@@ -189,7 +189,7 @@ configured-project context). Final result limits follow ranking. A five-second
 deadline covers all passes. `fileUsage.ts` stores the latest 256 successful file
 opens locally; optional `openedPaths` is bounded, ranking-only IPC data. No open
 target or ES process argument is derived from that history. File fuzzy retrieval
-is not implemented. See FILE_SEARCH_RANKING.md for the verified behavior and limits.
+is not implemented. See [FILE_SEARCH_RANKING.md](../features/file-search/FILE_SEARCH_RANKING.md) for the verified behavior and limits.
 
 `file_actions.rs` validates absolute paths, rejects device/URL/stream and ambiguous
 paths, canonicalizes and checks existence/type, and enforces confirmation for
@@ -208,7 +208,7 @@ temporarily enables the sleep privilege already assigned to the process token
 and restores its previous state; no elevation is requested. Cancellation and
 replacement invalidate tickets; failures never retry automatically. These actions
 share the existing launch activity guard, run off the UI thread, and hide only
-after Windows accepts the request. See SYSTEM_ACTIONS.md for API limitations.
+after Windows accepts the request. See [SYSTEM_ACTIONS.md](../features/SYSTEM_ACTIONS.md) for API limitations.
 
 `audio/` implements a closed Rust audio request enum, argument validation and
 structured errors, plus `IAudioEndpointVolume` on a fresh COM STA thread. A shared
@@ -258,4 +258,4 @@ scheduling/staleness, path display/highlighting, and action IPC. Rust tests cove
 validation, caching, native shortcut metadata, launch/error handling, placement,
 shortcut logic, ES parsing/process limits, and confirmation. Read-only examples
 exercise the real Windows catalog and Everything index. Compilation/unit tests do
-not prove GUI interaction; see [RELEASE_VERIFICATION.md](RELEASE_VERIFICATION.md).
+not prove GUI interaction; see [RELEASE_VERIFICATION.md](../verification/RELEASE_VERIFICATION.md).

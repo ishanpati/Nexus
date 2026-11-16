@@ -4,7 +4,7 @@ Stage G fixes launcher quit with auxiliary windows: the main window is retained
 while runs are active; an idle quit routes through Studio's Save / Discard / Cancel
 guard before process exit. Closing Studio itself still hides it and leaves NEXUS
 alive. New automated close-policy coverage and outstanding native verification
-are recorded in [V05_VERIFICATION.md](V05_VERIFICATION.md). Results below are historical.
+are recorded in [V05_VERIFICATION.md](../../verification/V05_VERIFICATION.md). Results below are historical.
 
 Stage E2 adds [saved workflow management](WORKFLOW_MANAGEMENT.md) and replaces the
 discard-only prompt with Save / Discard / Cancel for navigation and Studio close.

@@ -9,7 +9,7 @@
 A local-first desktop launcher for Windows 11.
 
 [![Windows 11 x64](https://img.shields.io/badge/Windows_11-x64-5179c7?style=flat-square)](#install)
-[![Version 0.5.0 release candidate](https://img.shields.io/badge/v0.5.0-release_candidate-c1b4ff?style=flat-square)](V05_VERIFICATION.md)
+[![Version 0.5.0 release candidate](https://img.shields.io/badge/v0.5.0-release_candidate-c1b4ff?style=flat-square)](docs/verification/V05_VERIFICATION.md)
 [![Tauri 2 · React · Rust](https://img.shields.io/badge/Tauri_2-React_%C2%B7_Rust-55515f?style=flat-square)](#built-for-your-desktop)
 
 [Explore](#less-searching-more-doing) · [Install](#install) · [Quick start](#make-it-a-habit) · [Documentation](#go-deeper)
@@ -31,7 +31,7 @@ work locally without an internet connection.
 
 > **Current status:** v0.5.0 is a release candidate. Installers have been built locally;
 > no downloadable GitHub release is published yet. Installed-app and upgrade acceptance
-> checks remain pending. [See the verification record.](V05_VERIFICATION.md)
+> checks remain pending. [See the verification record.](docs/verification/V05_VERIFICATION.md)
 
 ## Less searching. More doing.
 
@@ -97,7 +97,7 @@ Workflow lock and sleep steps must come last and require separate approval for e
 
 The animation uses real captured UI states, with pauses adjusted for readability.
 Quick workspace is demonstration data created for these captures; it is not a bundled template.
-[Capture details](docs/README_VERIFICATION.md).
+[Capture details](docs/verification/README_VERIFICATION.md).
 
 </details>
 
@@ -137,7 +137,7 @@ To add indexed file and folder search:
 4. Fully quit and restart NEXUS, then try `f meeting notes` with a filename you know.
 
 Everything and ES are not bundled. NEXUS uses the default Everything instance;
-ES 1.1.0.38 was verified in development. [Setup and troubleshooting](FILE_SEARCH.md#setup).
+ES 1.1.0.38 was verified in development. [Setup and troubleshooting](docs/features/file-search/FILE_SEARCH.md#setup).
 
 </details>
 
@@ -189,7 +189,7 @@ Tauri 2 connects the two using Microsoft's WebView2 runtime.
 App discovery uses Windows' application catalogs. Files are found through the local
 Everything index. Workflows stay on your PC, and production runs without a development
 server or cloud backend. NEXUS dispatches supported actions rather than interpreting
-your text as a shell command. [How it fits together](ARCHITECTURE.md).
+your text as a shell command. [How it fits together](docs/architecture/ARCHITECTURE.md).
 
 ## Before you rely on it
 
@@ -209,21 +209,17 @@ your text as a shell command. [How it fits together](ARCHITECTURE.md).
   If the global shortcut conflicts with another app, launching NEXUS again summons it.
 
 Detailed security and release caveats, including the current disabled content security
-policy, are recorded in [v0.5 verification](V05_VERIFICATION.md#known-limitations-and-remaining-risks).
+policy, are recorded in [v0.5 verification](docs/verification/V05_VERIFICATION.md#known-limitations-and-remaining-risks).
 
 ## Go deeper
 
 | Guide | What you'll find |
 | --- | --- |
+| [Documentation index](docs/README.md) | Feature specifications, developer contracts, and historical reports |
 | [User guide](docs/USER_GUIDE.md) | Full controls, workflow instructions, backup, and development setup |
+| [Architecture](docs/architecture/ARCHITECTURE.md) | Local data flow, native boundaries, and module responsibilities |
 | [Changelog](CHANGELOG.md) | Changes across NEXUS milestones |
-| [Architecture](ARCHITECTURE.md) | Local data flow, native boundaries, and module responsibilities |
-| [File search](FILE_SEARCH.md) · [Ranking](FILE_SEARCH_RANKING.md) | Everything setup, matching, and troubleshooting |
-| [Audio](AUDIO_CONTROLS.md) · [Windows actions](SYSTEM_ACTIONS.md) | Supported controls and platform restrictions |
-| [Workflow Studio](WORKFLOW_STUDIO.md) · [Editor](WORKFLOW_EDITOR.md) · [Management](WORKFLOW_MANAGEMENT.md) | Workflow authoring and saved data management |
-| [Workflow launcher](WORKFLOW_LAUNCHER.md) · [Execution](WORKFLOW_EXECUTION.md) | Finding, running, approving, and cancelling workflows |
-| [Action registry](ACTION_REGISTRY.md) · [Storage](WORKFLOW_STORAGE.md) | Developer contracts and persistence |
-| [v0.5 verification](V05_VERIFICATION.md) · [v0.4](V04_VERIFICATION.md) · [v0.3](RELEASE_VERIFICATION.md) | Executed checks and remaining release work |
+| [v0.5 verification](docs/verification/V05_VERIFICATION.md) | Executed checks and remaining release acceptance work |
 
 Development-stage documents include historical scope notes; use the changelog and
 current verification report for release status. For bug reports, include your Windows

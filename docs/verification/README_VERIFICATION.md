@@ -2,7 +2,7 @@
 
 Date: 2026-11-16. Source baseline: `797b7af` on `master`, v0.5.0.
 This documents the README redesign and its visual evidence. It does not replace
-the [v0.5 release acceptance report](../V05_VERIFICATION.md).
+the [v0.5 release acceptance report](V05_VERIFICATION.md).
 
 ## Source and distribution review
 
@@ -20,7 +20,7 @@ installed or published during this task. Older release hashes are historical evi
 not checksums for newly rebuilt screenshot binaries.
 
 All detailed user/developer instructions from the old README's **Install and run**
-section onward are preserved in [USER_GUIDE.md](USER_GUIDE.md), with relative links
+section onward are preserved in [USER_GUIDE.md](../USER_GUIDE.md), with relative links
 adjusted. Only the obsolete opening branch/status paragraph was replaced.
 
 ## Real Windows captures

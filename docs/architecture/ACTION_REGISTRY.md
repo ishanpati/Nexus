@@ -53,7 +53,7 @@ Errors include a stable code, message, optional parameter name and native detail
   still owns its original UI lifecycle. A future runner must call dispatch on a
   worker thread and decide presentation/usage policy separately.
 
-Stage C now adds [workflow execution IPC](WORKFLOW_EXECUTION.md) and an independent
+Stage C now adds [workflow execution IPC](../features/workflows/WORKFLOW_EXECUTION.md) and an independent
 registry confirmation scope per run. Registry expiry is checked after prerequisite
 validation. Native app results report acceptance with readiness explicitly unverified.
 Workflow execution rejects sensitive file types; the standalone registry retains

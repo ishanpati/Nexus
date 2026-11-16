@@ -27,7 +27,9 @@ NEXUS is a local-first Windows 11 universal command bar. The user owns product d
   - feature modules: `action_registry/`, `audio/`, `commands/`, `file_search/`, `installed_apps/`, `system_actions/`
 - `src-tauri/capabilities/`, `src-tauri/tauri.conf.json`: least-privilege permissions and native config
 - `tests/`: frontend/Node tests
-- Root `*.md`: feature and architecture documentation
+- `docs/README.md`: documentation index; `docs/architecture/` and `docs/features/`: technical documentation
+- `docs/verification/`: historical reports and release acceptance; `docs/releases/`: historical checksums
+- Root `README.md`, `CHANGELOG.md`, `AGENTS.md`: project overview, release history, and engineering rules
 - `package*.json`, `src-tauri/Cargo.*`: dependency manifests and lockfiles
 
 ## Checks

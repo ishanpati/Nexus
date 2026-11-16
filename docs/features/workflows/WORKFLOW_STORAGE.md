@@ -31,7 +31,7 @@ installed-app restart/upgrade remains pending.
 For backup/restore, fully quit every NEXUS instance before copying the database.
 Keep any SQLite sidecars with it, or copy the complete data directory while stopped.
 Preserve a pre-upgrade copy; never overwrite a live database. Selected paths and
-application IDs are plaintext local data. See README.md for the user procedure.
+application IDs are plaintext local data. See the [user guide](../../USER_GUIDE.md#workflow-data-and-backup) for the user procedure.
 
 Stage G aligns save-time checks and availability annotations with execution:
 sensitive file types are refused before committing through IPC. Older such steps
