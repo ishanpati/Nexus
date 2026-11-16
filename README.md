@@ -1,277 +1,234 @@
-# NEXUS v0.5 — Workflow Studio
+<div align="center">
 
-Release candidate on `feature/workflow-studio`: current results, artifacts and
-outstanding installed-app checks are in [V05_VERIFICATION.md](V05_VERIFICATION.md).
-Packaging alone does not complete release acceptance. Earlier Stage A–F documents
-record the development sequence; their historical test counts are not Stage G results.
+<img src="docs/assets/nexus-mark.svg" width="72" height="72" alt="NEXUS mark">
 
-NEXUS is a local-first universal command bar for Windows 11. Search and launch
-installed applications, control Windows audio and Settings, or find files and folders through your local Everything
-index. It runs independently of Codex and ChatGPT, with no API key, AI model,
-subscription, cloud account, or application server.
+# NEXUS
 
-## Install and run
+**Your apps, files, and everyday Windows actions. One command bar.**
 
-- Supported release target: Windows 11 x64 (including Intel Core Ultra systems).
-- Install `nexus_0.5.0_x64-setup.exe`, or the equivalent x64 MSI. Use one installer
-  format. Close a running NEXUS with Alt+F4 before upgrading.
-- Microsoft Edge WebView2 Runtime is required. The installer can download it if
-  absent; offline installation requires WebView2 to be installed beforehand.
-- For **file search only**, install the Everything desktop client and its separate
-  ES command-line tool from [voidtools](https://www.voidtools.com/downloads/).
-  Run Everything in your Windows session and let its index become ready. The
-  service alone is insufficient. ES 1.1.0.38 was verified on this computer.
-- Put `es.exe` on Windows PATH, or set the **user environment variable**
-  `NEXUS_ES_PATH` to its full path, without quote characters in the value.
-  For example, ES may be installed under `%LOCALAPPDATA%\Microsoft\WindowsApps`.
-  Fully exit and restart NEXUS after an environment change; summoning an existing
-  process does not reload its environment.
+A local-first desktop launcher for Windows 11.
 
-Everything and ES are not bundled. Application search and launching work without
-them. End users do not need Node, npm, Rust, Vite, Codex, or this source checkout.
-After prerequisites are installed, NEXUS features run locally without internet.
-The installers are unsigned; Windows may show an unknown-publisher warning.
+[![Windows 11 x64](https://img.shields.io/badge/Windows_11-x64-5179c7?style=flat-square)](#install)
+[![Version 0.5.0 release candidate](https://img.shields.io/badge/v0.5.0-release_candidate-c1b4ff?style=flat-square)](V05_VERIFICATION.md)
+[![Tauri 2 · React · Rust](https://img.shields.io/badge/Tauri_2-React_%C2%B7_Rust-55515f?style=flat-square)](#built-for-your-desktop)
 
-## Controls
+[Explore](#less-searching-more-doing) · [Install](#install) · [Quick start](#make-it-a-habit) · [Documentation](#go-deeper)
 
-| Action | Control |
+<br>
+
+<img src="docs/assets/launcher.png" width="650" alt="The real NEXUS launcher on Windows 11, with its search field, suggested commands, and keyboard hints">
+
+**Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd>. Type. Go.**
+
+</div>
+
+Opening an app, finding a document, changing the volume, and getting a workspace ready
+usually means visiting several different places. NEXUS brings those everyday tasks
+into a small, keyboard-friendly bar that appears when you need it and gets out of your way.
+
+No account, API key, subscription, or AI model is required. Once set up, its features
+work locally without an internet connection.
+
+> **Current status:** v0.5.0 is a release candidate. Installers have been built locally;
+> no downloadable GitHub release is published yet. Installed-app and upgrade acceptance
+> checks remain pending. [See the verification record.](V05_VERIFICATION.md)
+
+## Less searching. More doing.
+
+### Find the app you meant
+
+Search installed desktop and Microsoft Store apps by name. NEXUS shows their real
+icons, handles partial names and small typos, and uses your successful launches to
+help break ties. Select a result and press <kbd>Enter</kbd>.
+
+<p align="center">
+  <img src="docs/assets/application-search.png" width="650" alt="NEXUS searching installed applications for visual, with Visual Studio 2022 selected">
+</p>
+
+### Get straight to your files
+
+Type `f ` followed by a filename or part of a path. Open a document in its default
+app, open a folder in Explorer, or use <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to reveal
+the selected item. Matching text is highlighted so results are easy to scan.
+
+File search uses your local **Everything** index and requires the optional setup below.
+
+<p align="center">
+  <img src="docs/assets/file-search.png" width="650" alt="Real Everything-backed file results in NEXUS, with a highlighted filename and Show in folder control">
+</p>
+
+### Keep Windows controls within reach
+
+Set the volume, make a relative adjustment, mute or unmute, and check the current
+audio state. Jump to Sound, Wi-Fi, Bluetooth, or Display settings without navigating
+through menus. Lock is available directly; sleep asks for confirmation.
+
+Successful volume and mute changes also show a brief NEXUS audio overlay.
+
+<p align="center">
+  <img src="docs/assets/windows-controls.png" width="650" alt="NEXUS previewing volume 35 and displaying the last-read audio state; the command has not been executed">
+</p>
+
+### Build a routine once. Run it by name.
+
+**Workflow Studio** lets you combine supported actions into an ordered routine:
+launch apps, open documents and folders, adjust audio, or open a Settings page.
+Give it a name and optional aliases, arrange the steps, and save it on your PC.
+Edit or rename it later; unsaved changes are protected when you leave the editor.
+
+<p align="center">
+  <img src="docs/assets/workflow-studio.png" width="950" alt="The real Workflow Studio showing the Quick workspace demonstration and its ordered actions">
+</p>
+
+Type `w ` to browse saved workflows, or `w quick` to find one by name or alias.
+The **Workflow runs** view shows completed steps, failures, and cancellation.
+Workflow lock and sleep steps must come last and require separate approval for each run.
+
+<p align="center">
+  <img src="docs/assets/workflow-execution.png" width="650" alt="NEXUS reporting the completed Quick workspace workflow and its step results">
+</p>
+
+<details>
+<summary><strong>Watch a short launcher demonstration</strong></summary>
+
+<p align="center">
+  <img src="docs/assets/launcher-demo.gif" width="650" alt="Recorded NEXUS interaction: refining a Notepad search, switching to a Windows command, then finding a saved workflow">
+</p>
+
+The animation uses real captured UI states, with pauses adjusted for readability.
+Quick workspace is demonstration data created for these captures; it is not a bundled template.
+[Capture details](docs/README_VERIFICATION.md).
+
+</details>
+
+## Install
+
+**Windows 11 · x64 · Microsoft Edge WebView2 Runtime**
+
+A public installer download is **not available yet**. Check the repository's
+[Releases page](https://github.com/ishanpati/Nexus/releases) for published packages.
+The filenames below describe the locally built candidate, not downloadable assets.
+
+When you have a candidate installer:
+
+1. Close NEXUS before installing or upgrading. Back up saved workflows before an upgrade.
+2. Run **`nexus_0.5.0_x64-setup.exe`**, or use **`nexus_0.5.0_x64_en-US.msi`**.
+   Choose one format. The installers are unsigned, so Windows may report an unknown publisher.
+3. Launch **NEXUS** from the Start menu, then press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd>
+   whenever you need the bar.
+
+WebView2 is required. Setup can download it if it is missing; install it beforehand
+for offline setup. End users do not need Node.js, Rust, a source checkout, or ChatGPT.
+
+<details>
+<summary><strong>Enable file search with Everything</strong></summary>
+
+Application search, Windows controls, and workflows work without Everything.
+To add indexed file and folder search:
+
+1. Install the [Everything desktop client](https://www.voidtools.com/downloads/)
+   and its separate [ES command-line tool](https://www.voidtools.com/support/everything/command_line_interface/).
+2. Run Everything in your Windows session and let its index become ready.
+   The Everything service alone is insufficient.
+3. Add the folder containing `es.exe` to your Windows **user Path**, or create a
+   **user environment variable** named `NEXUS_ES_PATH` whose value is the full path
+   to `es.exe`, without enclosing quote characters. Find these controls by searching
+   Start for **Edit environment variables for your account**.
+4. Fully quit and restart NEXUS, then try `f meeting notes` with a filename you know.
+
+Everything and ES are not bundled. NEXUS uses the default Everything instance;
+ES 1.1.0.38 was verified in development. [Setup and troubleshooting](FILE_SEARCH.md#setup).
+
+</details>
+
+Building it yourself? Start with the [development instructions](docs/USER_GUIDE.md#development-and-release-build).
+
+## Make it a habit
+
+| You want to… | Type in NEXUS |
 | --- | --- |
-| Show / hide | Ctrl+Shift+Space |
-| Dismiss | Escape or switch to another application |
-| Move temporarily | Drag the top header |
-| Select result | Up / Down; scroll or Show more for additional results |
-| Open selected item | Enter or click |
-| Search files and folders | Type `f ` followed by a filename or path fragment |
-| Search saved workflows | Type `w `; an empty query lists all saved workflows |
-| Create / manage workflows | Type `create workflow` / `edit workflow` |
-| View workflow status | Select Workflow runs; closing progress leaves execution active |
-| Reveal in containing folder | Ctrl+Enter or the result's Show button |
-| Quit | Alt+F4 in the launcher; resolves Studio drafts first. During an active run this hides the launcher instead |
+| Open an app | Its name, such as `calculator` or `visual` |
+| Open a fresh Notepad | `open notepad` |
+| Find a file or folder | `f meeting notes` |
+| Set or adjust volume | `volume 35`, `volume +10`, `volume down` |
+| Mute, unmute, or read audio state | `mute`, `unmute`, `audio status` |
+| Open a Windows Settings page | `sound settings`, `wifi settings`, `bluetooth settings`, `display settings` |
+| Lock or request sleep | `lock`, `sleep` |
+| Create or manage a routine | `create workflow`, `edit workflow` |
+| Find your saved routines | `w ` or `w quick` after saving a matching name or alias |
 
-Each summon restores the upper-center position on the active monitor, with a
-primary-monitor fallback, and focuses search. NEXUS stays running while hidden,
-has no taskbar/tray entry, and uses a single instance. Launching its executable
-again summons that instance. If another app owns the shortcut, a visible warning
-explains this fallback; release the conflicting shortcut and restart NEXUS.
+Typing only searches or previews. Actions run when you activate a result.
 
-## Application search (v0.2 preserved)
+| Shortcut | Action |
+| --- | --- |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd> | Show or hide NEXUS |
+| <kbd>↑</kbd> / <kbd>↓</kbd> | Select a result |
+| <kbd>Enter</kbd> | Run or open the selected result |
+| <kbd>Ctrl</kbd> + <kbd>Enter</kbd> | Reveal a file result in Explorer |
+| <kbd>Esc</kbd> | Clear the query and dismiss the launcher |
+| <kbd>Alt</kbd> + <kbd>F4</kbd> in the launcher | Quit when idle; hide while a workflow is running |
 
-Ordinary queries search a cached catalog of current-user/all-users Start Menu
-shortcuts and Windows AppsFolder entries, including registered Win32 and Store
-apps. Matching ranks exact names/aliases, name prefixes, word prefixes, substrings,
-then conservative typos. Successful launch counts are stored locally and provide
-a small tie-breaking bonus. Eight results are initially rendered; more are
-available by scrolling or keyboard navigation.
+The launcher also hides when you switch to another app. Drag its header to move it
+temporarily; the next summon places it on the active monitor. Closing Workflow Studio
+keeps NEXUS running. Use **Workflow runs** to return to progress after dismissing the bar.
 
-Enter launches the selected cached application ID through native Windows APIs,
-preserving shortcut arguments and working directories. Real application icons are
-cached with a generic fallback. Refresh apps explicitly rebuilds the catalog.
-The built-in `open notepad`, `notepad`, and `launch notepad` aliases still work.
-Portable apps outside Windows' catalogs and unsupported/virtual shortcuts may not
-appear; conservative deduplication can leave visually similar entries.
+## Built for your desktop
 
-## File search and opening (v0.3)
+NEXUS runs as a Windows app with its interface bundled inside it. React and TypeScript
+render the launcher and Studio; a Rust backend validates requests and talks to Windows.
+Tauri 2 connects the two using Microsoft's WebView2 runtime.
 
-Type `f ` followed by a **literal** query. For example, `f meeting notes` searches
-indexed names first, with path-only matches as a lower-priority fallback. Queries
-containing a path separator explicitly search paths. File mode has a teal input border,
-filename/parent-folder labels, generic file/folder icons, and matching highlights.
-Normal application search resumes when the prefix is removed.
+| Part | Technology |
+| --- | --- |
+| Desktop application | Tauri 2 + WebView2 |
+| Interface | React 19 + TypeScript |
+| Windows integration | Rust + native Windows APIs |
+| Saved workflows | Local SQLite database |
+| Optional indexed file search | Everything + ES |
 
-Search waits 150 ms after typing, keeps only the newest pending query, and ignores
-stale successes and errors. Previous matches remain visible while updating but
-cannot be opened until current results arrive. The initial batch is ten; up to
-100 matches can be browsed. Narrow the query to find more specific results.
+App discovery uses Windows' application catalogs. Files are found through the local
+Everything index. Workflows stay on your PC, and production runs without a development
+server or cloud backend. NEXUS dispatches supported actions rather than interpreting
+your text as a shell command. [How it fits together](ARCHITECTURE.md).
 
-The v0.3.1 working branch retrieves independent folder/file candidate pools before
-ranking: exact name/stem, prefix, word-boundary, substring, then path-only matches.
-Location and previous opens only break ties within a match tier. Windows Known
-Folders supply Desktop/Documents/Downloads locations, including OneDrive redirection.
-Optional `NEXUS_PROJECT_DIRS` contains semicolon-separated absolute project roots
-(up to 32); set it before starting NEXUS. No file fuzzy search is enabled.
-See [FILE_SEARCH_RANKING.md](FILE_SEARCH_RANKING.md) for limits and measured latency.
+## Before you rely on it
 
-Files open with their Windows default association; folders open in Explorer.
-Executables, scripts, shortcuts, installers, macro-capable and unknown formats
-require explicit confirmation of the displayed full path. Cancel is selected by
-default. Revealing an item in Explorer does not execute it. Rust checks existence
-again before each action. Errors leave the launcher usable; successful opens hide
-it. No deletion, renaming, or moving is implemented.
+- **Release acceptance is still in progress.** Local build and screenshot checks do
+  not establish installer, upgrade, or every Windows hardware/policy scenario.
+- **Search has boundaries.** Portable apps outside Windows' catalogs may not appear.
+  File search covers indexed names and paths, not file contents or advanced Everything syntax.
+- **Workflows run in sequence.** No scripts, custom executable arguments, delays,
+  parallel steps, or waiting for an app to finish loading. Launch success means Windows
+  accepted the request. Cancellation stops future steps; completed actions are not undone.
+- **History is session-only.** Active runs do not resume after exit. Closing progress
+  does not cancel a run. Workflow file steps reject executable, script, and other sensitive types.
+- **Data needs a backup.** Workflows are stored in plaintext at
+  `%LOCALAPPDATA%\com.nexus.launcher\workflows.sqlite3`, with no encryption or sync.
+  Development and installed builds share this location. [Backup and restore instructions](docs/USER_GUIDE.md#workflow-data-and-backup).
+- **Distribution is early.** No automatic updates, automatic startup, or tray icon.
+  If the global shortcut conflicts with another app, launching NEXUS again summons it.
 
-Limitations:
+Detailed security and release caveats, including the current disabled content security
+policy, are recorded in [v0.5 verification](V05_VERIFICATION.md#known-limitations-and-remaining-risks).
 
-- Only Everything-indexed locations are searched. Results may be stale, offline,
-  or inaccessible; opening checks the current filesystem.
-- Everything operators (`ext:pdf`, wildcards, and so on) are literal text, not
-  advanced expressions. Input is limited to 1024 UTF-8 bytes without controls.
-- Named Everything instances are not configurable. Missing ES, unavailable
-  Everything, timeouts, and empty results have distinct states; use Retry search.
-- Opening depends on Windows associations and permissions. Unusual/long paths or
-  shell extensions may fail. Sensitive-file confirmation is not malware scanning.
-- No installer signing, tray icon, automatic startup, or auto-update is included.
+## Go deeper
 
-See [FILE_SEARCH.md](FILE_SEARCH.md) for semantics and diagnostics,
-[ARCHITECTURE.md](ARCHITECTURE.md) for module boundaries,
-[CHANGELOG.md](CHANGELOG.md) for release changes, and
-[RELEASE_VERIFICATION.md](RELEASE_VERIFICATION.md) for actual verification results.
+| Guide | What you'll find |
+| --- | --- |
+| [User guide](docs/USER_GUIDE.md) | Full controls, workflow instructions, backup, and development setup |
+| [Changelog](CHANGELOG.md) | Changes across NEXUS milestones |
+| [Architecture](ARCHITECTURE.md) | Local data flow, native boundaries, and module responsibilities |
+| [File search](FILE_SEARCH.md) · [Ranking](FILE_SEARCH_RANKING.md) | Everything setup, matching, and troubleshooting |
+| [Audio](AUDIO_CONTROLS.md) · [Windows actions](SYSTEM_ACTIONS.md) | Supported controls and platform restrictions |
+| [Workflow Studio](WORKFLOW_STUDIO.md) · [Editor](WORKFLOW_EDITOR.md) · [Management](WORKFLOW_MANAGEMENT.md) | Workflow authoring and saved data management |
+| [Workflow launcher](WORKFLOW_LAUNCHER.md) · [Execution](WORKFLOW_EXECUTION.md) | Finding, running, approving, and cancelling workflows |
+| [Action registry](ACTION_REGISTRY.md) · [Storage](WORKFLOW_STORAGE.md) | Developer contracts and persistence |
+| [v0.5 verification](V05_VERIFICATION.md) · [v0.4](V04_VERIFICATION.md) · [v0.3](RELEASE_VERIFICATION.md) | Executed checks and remaining release work |
 
-## Creating and managing workflows
+Development-stage documents include historical scope notes; use the changelog and
+current verification report for release status. For bug reports, include your Windows
+version, NEXUS version, steps to reproduce, and the error shown. Remove private paths
+from screenshots and logs before sharing them in [Issues](https://github.com/ishanpati/Nexus/issues).
 
-1. Type `create workflow` and activate the selected result. Workflow Studio opens
-   in its own resizable window; the launcher hides after the open succeeds.
-2. Enter a unique name, optional description and aliases (one per line). Choose
-   Add Action, search the action catalog, then configure each action. Application
-   steps select an installed-app reference; file/folder steps use Windows pickers.
-3. Use Edit, Remove, Move Up and Move Down to configure the sequence. Choose
-   **Save Workflow** to commit locally. No action runs while editing or saving.
-4. Type `edit workflow` to see saved workflows. Open a row to edit it; rename and
-   save preserve its identity. Delete shows the exact workflow ID/revision and
-   requires a separate confirmation. Cancel leaves stored data intact.
-5. In the launcher type `w ` to list workflows, or `w part of name` / `w alias` to
-   filter. Enter or click runs the selected saved workflow, regardless of raw text.
-   **Workflow runs** shows progress, failures, cancellation and explicit approvals.
-
-Save / Discard / Cancel protects unsaved drafts on navigation, Studio close and
-launcher quit. Closing Studio keeps NEXUS alive. Stale saves/deletes fail with a
-revision conflict; keep the draft, cancel navigation, and reload deliberately.
-Missing actions/apps/paths stay visible for repair or removal. A missing action's
-unchanged data can be retained during other edits; execution still refuses it.
-
-Runs use a saved snapshot, execute in sequence and stop on the first failure.
-Duplicate runs of the same workflow are refused. Hiding/closing presentation
-does not cancel an active run. Cancellation stops future steps; admitted Windows
-requests cannot be recalled, and completed steps are not undone. Run history and
-approvals last only for the current process; interrupted runs do not resume.
-
-Workflows support the nine built-in [Action Registry](ACTION_REGISTRY.md) actions:
-catalog app launch, document/folder opening, volume/relative volume/mute, four
-allowlisted Settings pages, lock and sleep. Lock/sleep must be last and require
-fresh explicit approval bound to that run and step. Workflow file steps reject
-executables, scripts, shortcuts, installers, macro-capable and unknown formats.
-There is no arbitrary executable/argument, shell, script, recursive workflow,
-delay, parallel-step or readiness-wait action. App success means Windows accepted
-the launch, not that loading finished. No AI or paid runtime service is involved.
-
-Rust owns stable action IDs, parameter schemas, validation and confirmation policy.
-New compiled actions using existing parameter types need no editor rewrite.
-Unsupported action versions and future parameter types fail safely and retain
-saved data; automatic action migrations are not provided. See
-[storage](WORKFLOW_STORAGE.md), [execution](WORKFLOW_EXECUTION.md) and
-[Studio](WORKFLOW_STUDIO.md) for details.
-
-## Workflow data and backup
-
-Workflows are stored in `%LOCALAPPDATA%\com.nexus.launcher\workflows.sqlite3`.
-Development and installed builds with the default identifier share this location;
-running `tauri dev` does not isolate your real data. Automated storage tests use
-temporary databases. The database includes selected local paths/application IDs
-in plaintext and inherits your Windows account permissions. It is not encrypted
-or synchronized.
-
-To back up, finish/cancel runs, close Studio, then fully quit NEXUS with Alt+F4
-in the launcher and confirm the process exited. Copy `workflows.sqlite3` to a
-safe location. If SQLite sidecar files remain, keep the entire data directory
-together; never copy only a live database. To restore, quit NEXUS, back up the
-current directory, and restore the saved set. Retain a copy before upgrades or
-uninstalling. Moving to another computer can require repairing app/path references.
-Installer/upgrade preservation must be verified using the release checklist.
-The NSIS uninstaller offers an app-data deletion checkbox. Leave it unchecked
-to retain workflows; selecting it can erase the entire local NEXUS data directory.
-
-## Windows controls (v0.4 preserved)
-
-NEXUS recognizes these typed commands:
-
-- `volume 35` / `vol 35`: set volume, whole numbers from 0 to 100.
-- `volume +10`, `volume -10`, `volume up`, `volume down`: relative percentage-point
-  changes; up/down mean +10/-10. Explicit deltas must be between -100 and +100.
-- `mute`, `unmute`, `sound settings`, `wifi settings`, `bluetooth settings`,
-  `display settings`, `lock`, and `sleep`.
-- `volume status` / `audio status` / `mute status`: read volume and mute state.
-
-Names and whitespace are normalized. Decimal fractions, exponent/hex syntax,
-NaN/Infinity, trailing arguments and shell-like suffixes are rejected. Partial
-commands such as `volume` or `sound` show usage guidance. Aliases include
-`audio settings`, `wi-fi settings`, `bt settings`, `screen settings`, and `lock screen`.
-
-Audio commands have an **Audio** badge. Enter/click executes through Windows Core
-Audio. Successful actions clear the query and hide NEXUS; failures keep the query
-and show an error. Escape clears and hides, and summoning starts with an empty,
-focused input. Partial fixed-command suggestions (for example `disp` and `blu`)
-execute their selected actions; incomplete numeric commands remain help-only.
-Audio suggestions show the most recently read volume/mute state, refreshed when
-NEXUS opens. The footer retains the last successful action after reopening without
-restoring its query. External volume changes while NEXUS stays open are not polled;
-use `audio status` for an explicit fresh reading.
-Successful volume/mute changes also show a small NEXUS overlay at the bottom of
-the launcher's monitor for about two seconds. It displays the resulting percentage
-and mute state without stealing focus. This is NEXUS feedback, not Windows' native
-media-key flyout: no documented Core Audio flyout API was found, and NEXUS does not
-simulate media keys or depend on private Shell interfaces.
-Typing and suggestions never change audio. Relative changes clamp to 0–100;
-changing volume preserves mute, and mute/unmute preserves volume. The current
-default multimedia output is resolved for every operation. No administrator,
-shell, key simulation, or external executable is required.
-
-Settings and lock have a **System** badge and execute only on Enter/click.
-Settings destinations are allowlisted; lock uses the Windows workstation API.
-Sleep has a **Confirm** badge and opens a modal with Cancel focused first. Only
-**Sleep now** sends the single-use confirmation required by Rust. Successful
-requests hide NEXUS; failures display an error. No administrator prompt is requested.
-See [SYSTEM_ACTIONS.md](SYSTEM_ACTIONS.md) for restrictions and safe manual checks.
-Complete system commands win equal-name app collisions; exact apps beat partial
-system hints. Apps remain selectable below complete commands. File mode is unchanged.
-
-Workflow mode uses the same ranking tiers for names and aliases, ignoring case.
-Only a leading `w` followed by a literal space activates it; bare `w` remains an
-ordinary command/app query. `f ` stays exclusive to files. Workflow names and aliases
-never enter ordinary command/app search, so names such as `lock` or `create workflow`
-are unambiguous: use `w lock` to run the saved workflow. Enter and clicks execute
-the selected saved UUID, never the query text. Searching never executes actions.
-
-A successful workflow start clears input and opens progress; a rejected start keeps
-the query and displays an error. Workflow runs shows current/completed steps,
-failures, approval details and session run IDs. Cancel workflow stops between steps;
-an admitted Windows request cannot be recalled and earlier actions are not undone.
-Closing progress, Escape and hiding/reopening the launcher leave runs active.
-Reopening gives an empty focused input; use Workflow runs to recover status. App
-steps report Windows launch acceptance, never verified application readiness.
-
-Manual checks: first run `audio status` and note the original state. Type `volume 35`
-without Enter and confirm nothing changes. Press Enter and check the reported state
-against Windows sound settings. Try `volume up`, `volume down`, `mute`, `unmute`,
-and `volume NaN`. Restore your original state afterwards. Switch the default output
-device and run `audio status` again. Check `open notepad`, `f nexus`, Escape and the
-global shortcut through their existing modes. See [AUDIO_CONTROLS.md](AUDIO_CONTROLS.md)
-for the implementation, actual test results and remaining manual checks.
-
-## Development and release build
-
-Requires Node 22.15+ (or 23.5+, for the test runner's module hooks; Node 26.13.0
-was used for this audit), npm, Rust, Windows MSVC build tools/SDK, WebView2, and the locked
-project dependencies. Engineering rules are in [AGENTS.md](AGENTS.md).
-No new installed runtime dependency is required for Windows controls. Audio needs
-an enabled default output and the Windows Audio service. Settings pages and sleep
-availability depend on hardware and Windows policy. Lock/sleep never request UAC.
-
-```powershell
-npm.cmd ci
-npm.cmd run tauri dev
-npm.cmd test
-npm.cmd run build
-cargo test --locked --offline --manifest-path src-tauri/Cargo.toml --all-targets
-cargo test --locked --offline --manifest-path src-tauri/Cargo.toml --doc
-npm.cmd run tauri build -- --bundles nsis,msi -- --locked --offline
-```
-
-Offline builds require cached npm/Cargo dependencies and installer tooling.
-Initial dependency/tool downloads need internet; they are not runtime services.
-NSIS output is under `src-tauri/target/release/bundle/nsis/`; MSI output is under
-`src-tauri/target/release/bundle/msi/`. Production assets are embedded in the native
-application; Vite and its localhost server are not used by the release.
-
-For a regression check, launch the release executable, use the shortcut, launch
-Notepad and a catalog app, search a known Unicode filename, open a text file and
-folder, and reveal a result. Verify confirmation cancellation, rapid query changes,
-and recovery after Everything becomes unavailable. The release verification record
-distinguishes executed checks from pending checks.
+**Licensing:** this repository currently has no license file. Public source availability
+does not grant an open-source license; reuse and redistribution terms have not been specified.
