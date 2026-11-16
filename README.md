@@ -217,6 +217,7 @@ policy, are recorded in [v0.5 verification](docs/verification/V05_VERIFICATION.m
 | Guide | What you'll find |
 | --- | --- |
 | [Documentation index](docs/README.md) | Feature specifications, developer contracts, and historical reports |
+| [Release notes](docs/releases/README.md) | Version history, installation/upgrade guidance, and v0.5 publication readiness |
 | [User guide](docs/USER_GUIDE.md) | Full controls, workflow instructions, backup, and development setup |
 | [Architecture](docs/architecture/ARCHITECTURE.md) | Local data flow, native boundaries, and module responsibilities |
 | [Changelog](CHANGELOG.md) | Changes across NEXUS milestones |

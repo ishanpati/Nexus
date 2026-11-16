@@ -10,6 +10,8 @@ remain pending in the [v0.5 verification report](verification/V05_VERIFICATION.m
   and [workflow data backup and restore](USER_GUIDE.md#workflow-data-and-backup).
 - [File-search setup](features/file-search/FILE_SEARCH.md#setup): optional Everything and ES requirements.
 - [Changelog](../CHANGELOG.md): implemented changes by release and development stage.
+- [Versioned release notes](releases/README.md): version comparison, candidate
+  status, installation requirements, upgrade precautions, and publication checklist.
 
 ## Understand the implementation
 
@@ -37,6 +39,10 @@ describes the v0.5 boundaries, module responsibilities, local data flow, and IPC
   and required checks. Run command examples from the repository root.
 
 ## Review verification and release evidence
+
+Publication preparation: [v0.5.0 notes](releases/v0.5.0.md),
+[GitHub Release draft](releases/v0.5.0-github-release.md), and
+[release checklist](releases/RELEASE_CHECKLIST.md). Acceptance remains pending.
 
 These records preserve the checks performed at the time and their outstanding
 manual checks. Historical passes do not establish acceptance of the current build.
