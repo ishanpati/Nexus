@@ -9,6 +9,7 @@
 A local-first desktop launcher for Windows 11.
 
 [![Windows 11 x64](https://img.shields.io/badge/Windows_11-x64-5179c7?style=flat-square)](#install)
+[![CI](https://github.com/ishanpati/Nexus/actions/workflows/ci.yml/badge.svg?branch=master&event=push)](https://github.com/ishanpati/Nexus/actions/workflows/ci.yml)
 [![Version 0.5.0 release candidate](https://img.shields.io/badge/v0.5.0-release_candidate-c1b4ff?style=flat-square)](docs/verification/V05_VERIFICATION.md)
 [![Tauri 2 · React · Rust](https://img.shields.io/badge/Tauri_2-React_%C2%B7_Rust-55515f?style=flat-square)](#built-for-your-desktop)
 
