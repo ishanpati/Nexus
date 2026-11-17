@@ -10,29 +10,35 @@ export type CommandRequest = {
   [Id in CommandId]: { readonly id: Id; readonly args: CommandArguments[Id] };
 }[CommandId];
 
+import type { CapabilityRegistration } from "./capabilityMetadata.ts";
+
 export interface Command<Id extends CommandId = CommandId> {
   readonly id: Id;
   readonly label: string;
   readonly description: string;
   readonly aliases: readonly string[];
   readonly request: Extract<CommandRequest, { id: Id }>;
+  readonly discovery: Pick<CapabilityRegistration, "category" | "examples" | "discoverable">;
 }
 
 export const commandRegistry = {
   create_workflow: {
     id: "create_workflow", label: "Create workflow", description: "Start a draft in Workflow Studio",
     aliases: [], request: { id: "create_workflow", args: {} },
+    discovery: { category: "Workflows", examples: ["create workflow"], discoverable: true },
   },
   edit_workflow: {
     id: "edit_workflow", label: "Edit workflow", description: "Browse saved workflows in Workflow Studio",
     aliases: [], request: { id: "edit_workflow", args: {} },
+    discovery: { category: "Workflows", examples: ["edit workflow"], discoverable: true },
   },
   open_notepad: {
     id: "open_notepad",
     label: "Open Notepad",
-    description: "A fresh page for your thoughts",
+    description: "Open Windows Notepad without file arguments.",
     aliases: ["notepad", "launch notepad"],
     request: { id: "open_notepad", args: {} },
+    discovery: { category: "Applications", examples: ["open notepad", "launch notepad"], discoverable: true },
   },
 } as const satisfies { [Id in CommandId]: Command<Id> };
 

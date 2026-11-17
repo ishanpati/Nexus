@@ -1,0 +1,171 @@
+[
+  {
+    "id": "app.launch",
+    "display_name": "Launch application",
+    "description": "Launch an application selected from the installed-app catalog.",
+    "category": "Applications",
+    "icon": "application",
+    "parameters": [
+      {
+        "key": "application_id",
+        "label": "Application",
+        "type": "application",
+        "required": true
+      }
+    ],
+    "workflow_compatible": true,
+    "confirmation": "none",
+    "terminal": false,
+    "schema_version": 1
+  },
+  {
+    "id": "file.open",
+    "display_name": "Open file",
+    "description": "Open a selected file using its Windows association; sensitive files need confirmation.",
+    "category": "Files",
+    "icon": "file",
+    "parameters": [
+      {
+        "key": "path",
+        "label": "File",
+        "type": "file",
+        "required": true
+      }
+    ],
+    "workflow_compatible": true,
+    "confirmation": "sensitive_target",
+    "terminal": false,
+    "schema_version": 1
+  },
+  {
+    "id": "folder.open",
+    "display_name": "Open folder",
+    "description": "Open a selected folder in File Explorer.",
+    "category": "Files",
+    "icon": "folder",
+    "parameters": [
+      {
+        "key": "path",
+        "label": "Folder",
+        "type": "folder",
+        "required": true
+      }
+    ],
+    "workflow_compatible": true,
+    "confirmation": "sensitive_target",
+    "terminal": false,
+    "schema_version": 1
+  },
+  {
+    "id": "audio.set_volume",
+    "display_name": "Set volume",
+    "description": "Set the current default output volume to a percentage.",
+    "category": "Audio",
+    "icon": "volume",
+    "parameters": [
+      {
+        "key": "percent",
+        "label": "Volume (%)",
+        "type": "number",
+        "min": 0.0,
+        "max": 100.0,
+        "integer": true,
+        "required": true
+      }
+    ],
+    "workflow_compatible": true,
+    "confirmation": "none",
+    "terminal": false,
+    "schema_version": 1
+  },
+  {
+    "id": "audio.adjust_volume",
+    "display_name": "Adjust volume",
+    "description": "Adjust the default output by percentage points, clamped to 0–100%.",
+    "category": "Audio",
+    "icon": "volume",
+    "parameters": [
+      {
+        "key": "delta",
+        "label": "Change (percentage points)",
+        "type": "number",
+        "min": -100.0,
+        "max": 100.0,
+        "integer": true,
+        "required": true
+      }
+    ],
+    "workflow_compatible": true,
+    "confirmation": "none",
+    "terminal": false,
+    "schema_version": 1
+  },
+  {
+    "id": "audio.set_mute",
+    "display_name": "Set mute state",
+    "description": "Mute or unmute the default output without changing its volume.",
+    "category": "Audio",
+    "icon": "volume",
+    "parameters": [
+      {
+        "key": "muted",
+        "label": "Muted",
+        "type": "boolean",
+        "required": true
+      }
+    ],
+    "workflow_compatible": true,
+    "confirmation": "none",
+    "terminal": false,
+    "schema_version": 1
+  },
+  {
+    "id": "settings.open",
+    "display_name": "Open Windows Settings",
+    "description": "Open one of the supported Windows Settings pages.",
+    "category": "Windows",
+    "icon": "settings",
+    "parameters": [
+      {
+        "key": "page",
+        "label": "Settings page",
+        "type": "choice",
+        "options": [
+          "sound",
+          "wifi",
+          "bluetooth",
+          "display"
+        ],
+        "required": true
+      }
+    ],
+    "workflow_compatible": true,
+    "confirmation": "none",
+    "terminal": false,
+    "schema_version": 1
+  },
+  {
+    "id": "system.lock",
+    "display_name": "Lock Windows",
+    "description": "Lock the session. Requires confirmation and must be the final step.",
+    "category": "Windows",
+    "icon": "lock",
+    "parameters": [],
+    "workflow_compatible": true,
+    "confirmation": "always",
+    "terminal": true,
+    "schema_version": 1
+  },
+  {
+    "id": "system.sleep",
+    "display_name": "Sleep",
+    "description": "Suspend the computer. Requires confirmation and must be the final step.",
+    "category": "Windows",
+    "icon": "moon",
+    "parameters": [],
+    "workflow_compatible": true,
+    "confirmation": "always",
+    "terminal": true,
+    "schema_version": 1
+  }
+]

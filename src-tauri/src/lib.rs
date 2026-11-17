@@ -2,6 +2,7 @@ pub mod action_registry;
 mod active_monitor;
 pub mod audio;
 mod audio_feedback;
+mod command_discovery;
 mod commands;
 mod file_actions;
 pub mod file_search;
@@ -118,6 +119,7 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            command_discovery::command_discovery_metadata,
             workflow_picker::pick_workflow_path,
             workflow_studio::open_workflow_studio,
             workflow_studio::studio_ready,

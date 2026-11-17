@@ -1,3 +1,4 @@
+import { launcherKeys } from "../launcherCapabilities";
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { CatalogApp } from "../appCatalog";
@@ -106,7 +107,7 @@ export function WorkflowEditor({ initial, disabled, service, onDirty, onSaving, 
       {catalogLoading && <p role="status">Loading action registry…</p>}
       {catalogError && <p role="alert" className="studio-error">{catalogError} <button type="button" onClick={() => setCatalogRetry(n => n + 1)}>Retry registry</button></p>}
       {picker && <div className="studio-action-picker" aria-label="Choose an action">
-        <label htmlFor="action-search">Search actions</label><input id="action-search" ref={pickerInput} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === "Escape") { e.preventDefault(); setPicker(false); } }} />
+        <label htmlFor="action-search">Search actions</label><input id="action-search" ref={pickerInput} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === launcherKeys.dismiss) { e.preventDefault(); setPicker(false); } }} />
         {!matching.length && <p>No matching workflow actions.</p>}
         {categories.map(category => <div key={category}><h4>{category}</h4><ul>{matching.filter(d => d.category === category).map(d => {
           const problem = descriptorProblem(d) || (d.terminal && draft.steps.some(s => catalog.find(a => a.id === s.action_id)?.terminal) ? "A final action is already present. Remove it before choosing another." : "");

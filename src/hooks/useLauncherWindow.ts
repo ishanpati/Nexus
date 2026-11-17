@@ -1,3 +1,4 @@
+import { launcherKeys } from "../launcherCapabilities";
 import { useCallback, useEffect, useState, useRef, type RefObject } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -11,6 +12,7 @@ export function useLauncherWindow(inputRef: RefObject<HTMLInputElement | null>, 
   shownRef.current = onShown;
   const [windowError, setWindowError] = useState("");
   const [shortcutNotice, setShortcutNotice] = useState("");
+  const [shortcutLabel, setShortcutLabel] = useState("");
   const startDrag = useCallback(async () => {
     try {
       await invoke("start_launcher_drag");
@@ -41,7 +43,7 @@ export function useLauncherWindow(inputRef: RefObject<HTMLInputElement | null>, 
     };
     const focusInput = () => inputRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !event.isComposing) {
+      if (event.key === launcherKeys.dismiss && !event.isComposing) {
         event.preventDefault();
         void hideWindow();
       }
@@ -60,8 +62,8 @@ export function useLauncherWindow(inputRef: RefObject<HTMLInputElement | null>, 
     trackListener(appWindow.listen<string>("launcher-error", ({ payload }) => {
       if (!disposed) setWindowError(payload);
     }));
-    void invoke<{ registered: boolean; warning: string | null }>("shortcut_status").then((status) => {
-      if (!disposed) setShortcutNotice(status.warning ?? "");
+    void invoke<{ keys: string; registered: boolean; warning: string | null }>("shortcut_status").then((status) => {
+      if (!disposed) { setShortcutNotice(status.warning ?? ""); setShortcutLabel(status.keys); }
     }).catch((error: unknown) => {
       if (!disposed) setWindowError("Could not read shortcut status: " + String(error));
     });
@@ -74,5 +76,5 @@ export function useLauncherWindow(inputRef: RefObject<HTMLInputElement | null>, 
     };
   }, [hideWindow, inputRef]);
 
-  return { hideWindow, startDrag, windowError, shortcutNotice };
+  return { hideWindow, startDrag, windowError, shortcutNotice, shortcutLabel };
 }

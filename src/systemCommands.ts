@@ -1,3 +1,4 @@
+import type { CapabilityRegistration } from "./capabilityMetadata.ts";
 import { normalizeSearch } from "./appSearch.ts";
 
 export interface SystemArguments {
@@ -19,19 +20,30 @@ interface Definition {
   readonly names: readonly string[];
   readonly help: string;
   readonly action?: SystemAction;
+  readonly discovery: Pick<CapabilityRegistration, "category" | "actionIds" | "examples" | "discoverable" | "parameters"> & { readonly syntax?: string };
 }
 
 export const systemCommandRegistry = [
-  { id: "audio_status", label: "Audio status", names: ["volume status", "vol status", "audio status", "mute status"], help: "Read the current volume and mute state.", action: { id: "get_audio_state", args: {} } },
-  { id: "volume", label: "Volume", names: ["volume", "vol"], help: "Use volume 0–100, volume +10/-10, or volume up/down." },
-  { id: "mute", label: "Mute audio", names: ["mute", "mute audio"], help: "Mute the default audio output.", action: { id: "set_mute", args: { muted: true } } },
-  { id: "unmute", label: "Unmute audio", names: ["unmute", "unmute audio"], help: "Unmute the default audio output.", action: { id: "set_mute", args: { muted: false } } },
-  { id: "sound_settings", label: "Sound settings", names: ["sound settings", "audio settings"], help: "Open Windows sound settings.", action: { id: "open_settings", args: { page: "sound" } } },
-  { id: "wifi_settings", label: "Wi-Fi settings", names: ["wifi settings", "wi-fi settings", "wireless settings"], help: "Open Windows Wi-Fi settings.", action: { id: "open_settings", args: { page: "wifi" } } },
-  { id: "bluetooth_settings", label: "Bluetooth settings", names: ["bluetooth settings", "bt settings"], help: "Open Windows Bluetooth settings.", action: { id: "open_settings", args: { page: "bluetooth" } } },
-  { id: "display_settings", label: "Display settings", names: ["display settings", "screen settings"], help: "Open Windows display settings.", action: { id: "open_settings", args: { page: "display" } } },
-  { id: "lock", label: "Lock Windows", names: ["lock", "lock screen", "lock computer"], help: "Lock your Windows session.", action: { id: "lock", args: {} } },
-  { id: "sleep", label: "Sleep", names: ["sleep", "sleep computer"], help: "Put the computer to sleep. Explicit confirmation required.", action: { id: "sleep", args: {} } },
+  { id: "audio_status", label: "Audio status", names: ["volume status", "vol status", "audio status", "mute status"], help: "Read the current volume and mute state.", action: { id: "get_audio_state", args: {} },
+    discovery: {"category":"Audio","actionIds":[],"examples":["audio status","vol status"],"discoverable":true} },
+  { id: "volume", label: "Volume", names: ["volume", "vol"], help: "Use volume 0–100, volume +10/-10, or volume up/down.",
+    discovery: {"category":"Audio","actionIds":["audio.set_volume","audio.adjust_volume"],"examples":["volume 35","vol 0","volume +10","volume -10","volume up","volume down"],"discoverable":true,"syntax":"volume <percent | signed delta | up | down>","parameters":[{"name":"value","description":"Use percent for an absolute level, a signed delta for a relative change, or up/down for +10/-10. See associated action schemas for numeric limits."}]} },
+  { id: "mute", label: "Mute audio", names: ["mute", "mute audio"], help: "Mute the default audio output.", action: { id: "set_mute", args: { muted: true } },
+    discovery: {"category":"Audio","actionIds":["audio.set_mute"],"examples":["mute"],"discoverable":true} },
+  { id: "unmute", label: "Unmute audio", names: ["unmute", "unmute audio"], help: "Unmute the default audio output.", action: { id: "set_mute", args: { muted: false } },
+    discovery: {"category":"Audio","actionIds":["audio.set_mute"],"examples":["unmute"],"discoverable":true} },
+  { id: "sound_settings", label: "Sound settings", names: ["sound settings", "audio settings"], help: "Open Windows sound settings.", action: { id: "open_settings", args: { page: "sound" } },
+    discovery: {"category":"Windows Settings","actionIds":["settings.open"],"examples":["sound settings"],"discoverable":true} },
+  { id: "wifi_settings", label: "Wi-Fi settings", names: ["wifi settings", "wi-fi settings", "wireless settings"], help: "Open Windows Wi-Fi settings.", action: { id: "open_settings", args: { page: "wifi" } },
+    discovery: {"category":"Windows Settings","actionIds":["settings.open"],"examples":["wifi settings"],"discoverable":true} },
+  { id: "bluetooth_settings", label: "Bluetooth settings", names: ["bluetooth settings", "bt settings"], help: "Open Windows Bluetooth settings.", action: { id: "open_settings", args: { page: "bluetooth" } },
+    discovery: {"category":"Windows Settings","actionIds":["settings.open"],"examples":["bluetooth settings"],"discoverable":true} },
+  { id: "display_settings", label: "Display settings", names: ["display settings", "screen settings"], help: "Open Windows display settings.", action: { id: "open_settings", args: { page: "display" } },
+    discovery: {"category":"Windows Settings","actionIds":["settings.open"],"examples":["display settings"],"discoverable":true} },
+  { id: "lock", label: "Lock Windows", names: ["lock", "lock screen", "lock computer"], help: "Lock your Windows session.", action: { id: "lock", args: {} },
+    discovery: {"category":"Power/System Controls","actionIds":["system.lock"],"examples":["lock"],"discoverable":true} },
+  { id: "sleep", label: "Sleep", names: ["sleep", "sleep computer"], help: "Put the computer to sleep. Explicit confirmation required.", action: { id: "sleep", args: {} },
+    discovery: {"category":"Power/System Controls","actionIds":["system.sleep"],"examples":["sleep"],"discoverable":true} },
 ] as const satisfies readonly Definition[];
 
 export type SystemCommandId = typeof systemCommandRegistry[number]["id"];

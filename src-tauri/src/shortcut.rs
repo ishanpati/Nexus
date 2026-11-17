@@ -1,28 +1,31 @@
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
-use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 pub const LABEL: &str = "Ctrl+Shift+Space";
 
 #[derive(Clone, Serialize)]
 pub struct ShortcutStatus {
+    pub keys: String,
     pub registered: bool,
     pub warning: Option<String>,
 }
 
 fn shortcut() -> Shortcut {
-    Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::Space)
+    LABEL.parse().expect("launcher shortcut must be valid")
 }
 
 fn registration_status(result: Result<(), String>) -> ShortcutStatus {
     match result {
         Ok(()) => ShortcutStatus {
+            keys: LABEL.into(),
             registered: true,
             warning: None,
         },
         Err(error) => {
             eprintln!("Could not register {LABEL}: {error}");
             ShortcutStatus {
+                keys: LABEL.into(),
                 registered: false,
                 warning: Some(format!(
                     "{LABEL} is unavailable; another app may own it. Launch NEXUS again to reopen, or close the conflicting app and restart NEXUS."
@@ -84,6 +87,16 @@ pub fn shortcut_status(status: State<'_, ShortcutStatus>) -> ShortcutStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn configured_label_registers_the_existing_chord() {
+        use tauri_plugin_global_shortcut::{Code, Modifiers};
+        assert_eq!(
+            shortcut(),
+            Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::Space)
+        );
+        assert_eq!(registration_status(Ok(())).keys, LABEL);
+    }
 
     #[test]
     fn only_key_press_toggles_not_key_release() {

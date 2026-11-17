@@ -1,3 +1,5 @@
+import { searchModeRegistry } from "./launcherCapabilities.ts";
+
 export interface FileResult {
   readonly full_path: string;
   readonly filename: string;
@@ -10,8 +12,8 @@ export const FILE_RESULT_LIMIT = 100;
 export const FILE_DEBOUNCE_MS = 150;
 
 export function searchMode(input: string): SearchMode {
-  if (/^f /i.test(input)) return { kind: "files", query: input.slice(2).trim() };
-  if (/^w /i.test(input)) return { kind: "workflows", query: input.slice(2).trim() };
+  const mode = searchModeRegistry.find(entry => entry.prefix && input.toLowerCase().startsWith(entry.prefix));
+  if (mode && mode.mode !== "apps") return { kind: mode.mode, query: input.slice(mode.prefix.length).trim() };
   return { kind: "apps" };
 }
 

@@ -149,6 +149,19 @@ fn validate_opened(opened: &[String]) -> Result<()> {
     }
 }
 
+/// Resolve only the existing trusted ES configuration; never start a search for help.
+pub(crate) fn discovery_availability() -> std::result::Result<(), String> {
+    if !cfg!(windows) {
+        return Err("File search requires Windows and Everything.".into());
+    }
+    locate(
+        std::env::var_os("NEXUS_ES_PATH").map(PathBuf::from),
+        std::env::var_os("PATH"),
+    )
+    .map(|_| ())
+    .map_err(|error| error.message)
+}
+
 fn locate(configured: Option<PathBuf>, path: Option<std::ffi::OsString>) -> Result<PathBuf> {
     if let Some(candidate) = configured {
         if candidate.is_absolute()

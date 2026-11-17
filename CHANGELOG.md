@@ -7,7 +7,10 @@ acceptance. See the [release index](docs/releases/README.md) for status and setu
 
 ## Unreleased
 
-No additional changes recorded.
+- v0.5.2 Stage A: registry-driven command, search-mode, action, interaction and
+  shortcut discovery metadata with a typed read-only service, authoritative Rust
+  action contracts, and explicit dependency/shortcut availability. Help is reserved
+  as unavailable metadata; the Help Center UI is not included.
 
 ## 0.5.1 ? 2026-11-17 ? Release candidate
 

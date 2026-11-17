@@ -1,3 +1,4 @@
+import { launcherKeys, launcherControlRegistry } from "./launcherCapabilities";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { flushSync } from "react-dom";
 import { searchCommandsAndApps } from "./commandSearch";
@@ -55,7 +56,7 @@ function App() {
     try { return parseLaunchCounts(localStorage.getItem(USAGE_STORAGE_KEY)); }
     catch { return {}; }
   });
-  const { hideWindow, startDrag, windowError, shortcutNotice } = useLauncherWindow(inputRef, resetLauncher, () => {
+  const { hideWindow, startDrag, windowError, shortcutNotice, shortcutLabel } = useLauncherWindow(inputRef, resetLauncher, () => {
     if (!runningRef.current) void refreshAudioSummary();
   });
   const { catalog, loading, error: catalogError, refreshCatalog } = useAppCatalog();
@@ -181,17 +182,17 @@ function App() {
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") enterRelease.current.cancel();
+    if (event.key !== launcherKeys.execute) enterRelease.current.cancel();
     if (event.nativeEvent.isComposing) return;
-    if (progressOpen && ["ArrowDown", "ArrowUp", "Enter"].includes(event.key)) { event.preventDefault(); return; }
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    if (progressOpen && ([launcherKeys.next, launcherKeys.previous, launcherKeys.execute] as readonly string[]).includes(event.key)) { event.preventDefault(); return; }
+    if (event.key === launcherKeys.next || event.key === launcherKeys.previous) {
       event.preventDefault();
       if (results.length === 0) return;
-      const direction = event.key === "ArrowDown" ? 1 : -1;
+      const direction = event.key === launcherKeys.next ? 1 : -1;
       const next = moveSelection(activeIndex, direction, results.length);
       setSelectedIndex(next);
       setVisibleCount(fileMode ? Math.min(results.length, Math.max(shownCount, Math.ceil((next + 1) / FILE_BATCH_SIZE) * FILE_BATCH_SIZE)) : visibleResultCount(shownCount, next, results.length));
-    } else if (event.key === "Enter") {
+    } else if (event.key === launcherKeys.execute) {
       event.preventDefault();
       if (selected && !event.repeat) {
         if (selected.kind === "app" || selected.kind === "workflow") {
@@ -226,7 +227,7 @@ function App() {
       >
         <div className="brand"><span className="brand-mark" aria-hidden="true">N</span>NEXUS</div>
         <button className="refresh-button" onMouseDown={event => event.stopPropagation()}
-          onClick={() => { setProgressOpen(value => !value); void workflows.runs.refresh(); }}>Workflow runs ({workflows.execution.runs.filter(runActive).length} active)</button>
+          onClick={() => { setProgressOpen(value => !value); void workflows.runs.refresh(); }}>{launcherControlRegistry.runs.displayName} ({workflows.execution.runs.filter(runActive).length} active)</button>
         <span className="local-badge"><span aria-hidden="true" />LOCAL &amp; READY</span>
       </header>
       <div className={"search-field" + (fileMode ? " file-mode" : workflowMode ? " workflow-mode" : "")}>
@@ -257,7 +258,7 @@ function App() {
           }}
           onKeyDown={handleKeyDown}
           onKeyUp={(event) => {
-            if (event.key !== "Enter") return;
+            if (event.key !== launcherKeys.execute) return;
             const row = enterRelease.current.take();
             if (row && !event.nativeEvent.isComposing && !runningRef.current && !progressOpen) {
               event.preventDefault();
@@ -279,8 +280,8 @@ function App() {
           onClose={() => { setProgressOpen(false); inputRef.current?.focus(); }} onCancel={id => void workflows.runs.cancel(id)}
           onDecide={(id, prompt, decision) => void workflows.runs.decide(id, prompt, decision)} onRefresh={() => void workflows.runs.refresh()} /> : <>
         <div className="section-label">{fileMode ? "FILES & FOLDERS" : workflowMode ? "WORKFLOWS" : query.trim() ? "RESULTS" : "SUGGESTED"}<span>{results.length}{fileMode && results.length === FILE_RESULT_LIMIT ? " (limit)" : ""}</span>
-          {workflowMode ? <button className="refresh-button" disabled={workflows.saved.loading} onClick={() => void workflows.repository.refresh()}>Refresh workflows</button> : fileMode ? <button className="refresh-button" disabled={!fileQuery || fileLoading} onClick={() => { files.retry(); inputRef.current?.focus(); }}>Retry search</button> : <button className="refresh-button" disabled={loading} onClick={() => { void refreshCatalog(); inputRef.current?.focus(); }}>
-            {loading ? (catalog ? "Refreshing…" : "Loading apps…") : catalogError ? "Retry apps" : "Refresh apps"}
+          {workflowMode ? <button className="refresh-button" disabled={workflows.saved.loading} onClick={() => void workflows.repository.refresh()}>{launcherControlRegistry.refreshWorkflows.displayName}</button> : fileMode ? <button className="refresh-button" disabled={!fileQuery || fileLoading} onClick={() => { files.retry(); inputRef.current?.focus(); }}>{launcherControlRegistry.retryFiles.displayName}</button> : <button className="refresh-button" disabled={loading} onClick={() => { void refreshCatalog(); inputRef.current?.focus(); }}>
+            {loading ? (catalog ? "Refreshing…" : "Loading apps…") : catalogError ? "Retry apps" : launcherControlRegistry.refreshApps.displayName}
           </button>}
         </div>
         {workflowMode ? <div className="catalog-status" role="status">{workflows.saved.loading ? "Loading workflows…" : workflows.saved.error
@@ -324,14 +325,14 @@ function App() {
             </li>
           ))}
         </ul>
-        {shownCount < results.length && <button className="more-results" onClick={() => { setVisibleCount(shownCount + batchSize); inputRef.current?.focus(); }}>Show more ({results.length - shownCount} remaining)</button>}
+        {shownCount < results.length && <button className="more-results" onClick={() => { setVisibleCount(shownCount + batchSize); inputRef.current?.focus(); }}>{launcherControlRegistry.more.displayName} ({results.length - shownCount} remaining)</button>}
         {!fileMode && !workflowMode && results.length === 0 && !loading && <p className="empty-state">No matching commands or applications. Try <strong>open notepad</strong>.</p>}
         </>}
       </section>
       <p className={"status" + (commandError || windowError || shortcutNotice ? " error" : "")} role="status">{commandError || windowError || message || (audioSelected ? audioSummary : "") || shortcutNotice || (lastSuccess ? "Last action: " + lastSuccess : usageNotice)}</p>
       <footer className="footer">
         <span className="keyboard-hints"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> open</span></span>
-        <span>Ctrl + Shift + Space</span>
+        <span>{shortcutLabel}</span>
       </footer>
     </main>
   );
