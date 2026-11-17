@@ -25,6 +25,7 @@ pub fn start_workflow(
     engine: tauri::State<'_, Engine>,
 ) -> Result<Snapshot> {
     main_window(&window)?;
+    let activation_intent = crate::installed_apps::launching::activation_intent();
     let app = window.app_handle().clone();
     let events = app.clone();
     let sink: Sink = Arc::new(move |event| {
@@ -74,11 +75,23 @@ pub fn start_workflow(
         let audio = app.state::<Arc<AudioService>>();
         let system = app.state::<Arc<SystemActions>>();
         let activity = app.state::<Arc<LaunchActivity>>();
+        let cancelled = || run.cancelled() || !activation_intent();
+        let hide = || -> std::result::Result<(), String> {
+            if let Some(window) = app.get_webview_window("main")
+                && window.is_focused().map_err(|e| e.to_string())?
+            {
+                window.hide().map_err(|e| e.to_string())?;
+                window.is_visible().map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        };
         let mut runtime = NativeRuntime {
             catalog: &catalog,
             audio: &audio,
             system: &system,
             activity: &activity,
+            launch_hide: Some(&hide),
+            launch_cancelled: Some(&cancelled),
         };
         execute(&run, workflow, registry, &mut runtime, CONFIRMATION_TTL);
     })

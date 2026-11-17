@@ -502,6 +502,8 @@ fn native_reference_checks_fail_closed_without_launching_anything() {
         audio: &audio,
         system: &system,
         activity: &activity,
+        launch_hide: None,
+        launch_cancelled: None,
     };
     assert!(runtime.check_application("cmd.exe").is_err());
     for path in [

@@ -1,4 +1,11 @@
-export interface LaunchOutcome { readonly launched: boolean; readonly warning: string | null }
+export interface LaunchOutcome {
+  readonly launched: boolean;
+  readonly accepted: boolean;
+  readonly window_detected: boolean;
+  readonly activation: "foreground" | "denied" | "timed_out" | "suppressed";
+  readonly readiness_verified: false;
+  readonly warning: string | null;
+}
 export interface IconPixels { readonly width: number; readonly height: number; readonly rgba: readonly number[] }
 type Transport = <T>(command: string, args: Record<string, unknown>) => Promise<T>;
 

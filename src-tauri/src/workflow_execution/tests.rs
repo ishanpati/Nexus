@@ -17,6 +17,7 @@ struct Fake {
     hook: Option<Hook>,
     checks: usize,
     missing_on_check: Option<usize>,
+    launch_activation: Option<&'static str>,
 }
 impl Fake {
     fn check(&mut self, name: &str) -> crate::action_registry::Result<()> {
@@ -65,7 +66,13 @@ impl ActionRuntime for Fake {
         Ok(path.ends_with(".exe") || path.ends_with(".ps1"))
     }
     fn launch_application(&mut self, id: &str) -> crate::action_registry::Result<Value> {
-        self.record(id)
+        let output = self.record(id)?;
+        Ok(if let Some(activation) = self.launch_activation {
+            json!({"launched":true,"accepted":true,"readiness_verified":false,
+                "window_detected":activation == "denied", "activation":activation,"warning":null})
+        } else {
+            output
+        })
     }
     fn open_path(
         &mut self,
@@ -205,6 +212,27 @@ fn successful_three_steps_saved_order_and_terminal_snapshot() {
     );
     let event_json = serde_json::to_string(&events).unwrap();
     assert!(!event_json.contains("parameters"));
+}
+
+#[test]
+fn accepted_apps_with_unverified_activation_do_not_fail_or_reorder_workflows() {
+    for activation in ["denied", "timed_out", "suppressed"] {
+        let mut fake = Fake {
+            launch_activation: Some(activation),
+            ..Default::default()
+        };
+        let plan = workflow(vec![
+            ("app.launch", json!({"application_id":"first"})),
+            ("app.launch", json!({"application_id":"second"})),
+        ]);
+        let (snapshot, _) = sync_run(plan, &mut fake);
+        assert_eq!(snapshot.status, Status::Succeeded);
+        assert_eq!(*fake.calls.lock().unwrap(), ["first", "second"]);
+        for step in snapshot.steps {
+            assert_eq!(step.status, Status::Succeeded);
+            assert_eq!(step.output.unwrap()["activation"], activation);
+        }
+    }
 }
 
 #[test]

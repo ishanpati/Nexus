@@ -28,8 +28,41 @@ impl Drop for LaunchGuard {
 #[derive(Debug, Serialize)]
 pub struct LaunchOutcome {
     pub launched: bool,
+    pub accepted: bool,
+    pub window_detected: bool,
+    pub activation: super::foreground::Activation,
+    pub readiness_verified: bool,
     // A hide failure must not invite a duplicate launch or discard usage credit.
     pub warning: Option<String>,
+}
+impl LaunchOutcome {
+    pub(super) fn accepted(
+        window_detected: bool,
+        activation: super::foreground::Activation,
+        warning: Option<String>,
+    ) -> Self {
+        Self {
+            launched: true,
+            accepted: true,
+            window_detected,
+            activation,
+            readiness_verified: false,
+            warning,
+        }
+    }
+}
+
+/// A workflow's activation permission belongs to the original user gesture,
+/// rather than being renewed by every later step after the user moved on.
+pub(crate) fn activation_intent() -> impl Fn() -> bool + Send + Sync {
+    #[cfg(windows)]
+    {
+        super::foreground_windows::intent()
+    }
+    #[cfg(not(windows))]
+    {
+        || false
+    }
 }
 
 pub(super) fn valid_text(value: &str) -> bool {
@@ -60,15 +93,6 @@ pub(crate) fn validate(app: &InstalledApp) -> Result<(), String> {
     }
 }
 
-fn finish(
-    launch: impl FnOnce() -> Result<(), String>,
-    hide: impl FnOnce() -> Result<(), String>,
-) -> Result<LaunchOutcome, String> {
-    launch()?;
-    Ok(LaunchOutcome { launched: true, warning: hide().err().map(|error|
-        format!("The application opened, but NEXUS could not hide. Press Escape; do not launch it again. {error}")) })
-}
-
 #[tauri::command]
 pub async fn launch_installed_app(
     app_id: String,
@@ -76,23 +100,51 @@ pub async fn launch_installed_app(
     activity: tauri::State<'_, Arc<LaunchActivity>>,
     window: tauri::WebviewWindow,
 ) -> Result<LaunchOutcome, String> {
-    let _guard = activity.inner().acquire()?;
+    let guard = activity.inner().acquire()?;
     let cache = cache.inner().clone();
-    let result = tauri::async_runtime::spawn_blocking(move || launch_catalog_app(&cache, &app_id))
-        .await
-        .map_err(|e| format!("Could not complete the launch request: {e}"))?;
-    finish(|| result, || window.hide().map_err(|e| e.to_string()))
+    tauri::async_runtime::spawn_blocking(move || {
+        let _guard = guard;
+        launch_catalog_app_with_context(
+            &cache,
+            &app_id,
+            &|| {
+                window
+                    .hide()
+                    // Flush the window dispatcher before sampling the restored
+                    // foreground; hide itself may only enqueue a native message.
+                    .and_then(|_| window.is_visible().map(|_| ()))
+                    .map_err(|e| format!("Application opened, but NEXUS could not hide: {e}"))
+            },
+            &|| false,
+        )
+    })
+    .await
+    .map_err(|e| format!("Could not complete the launch request: {e}"))?
 }
 
-pub(crate) fn launch_catalog_app(cache: &CatalogCache, app_id: &str) -> Result<(), String> {
+pub(crate) fn launch_catalog_app_with_context(
+    cache: &CatalogCache,
+    app_id: &str,
+    hide: &(dyn Fn() -> Result<(), String> + Sync),
+    cancelled: &(dyn Fn() -> bool + Sync),
+) -> Result<LaunchOutcome, String> {
     let (_, app) = cache.lookup(app_id)?;
     validate(&app)?;
     #[cfg(windows)]
     {
-        super::native::on_sta(move || super::native::launch(&app))
+        super::native::on_sta(move || {
+            let app = if let LaunchTarget::Shortcut { path, .. } = &app.launch {
+                super::windows::shortcut(std::path::Path::new(path), super::Source::UserStartMenu)?
+                    .ok_or("This shortcut is no longer available.")?
+            } else {
+                app
+            };
+            super::foreground_windows::launch(&app, hide, cancelled)
+        })
     }
     #[cfg(not(windows))]
     {
+        let _ = (hide, cancelled);
         Err("Application launching is supported on Windows only.".into())
     }
 }
@@ -114,33 +166,29 @@ pub(crate) fn check_catalog_app(cache: &CatalogCache, app_id: &str) -> Result<()
 mod tests {
     use super::*;
     #[test]
-    fn failure_does_not_hide_and_success_hides_once() {
-        assert!(
-            finish(
-                || Err("Windows refused launch".into()),
-                || panic!("must stay visible")
-            )
-            .unwrap_err()
-            .contains("Windows refused")
-        );
-        let hidden = std::cell::Cell::new(0);
-        let outcome = finish(
-            || Ok(()),
-            || {
-                hidden.set(hidden.get() + 1);
-                Ok(())
-            },
-        )
-        .unwrap();
-        assert!(outcome.launched);
-        assert!(outcome.warning.is_none());
-        assert_eq!(hidden.get(), 1);
+    fn accepted_launch_is_success_for_all_activation_outcomes_and_hide_warnings() {
+        use super::super::foreground::Activation::*;
+        for activation in [Foreground, Denied, TimedOut, Suppressed] {
+            let result = LaunchOutcome::accepted(
+                activation == Foreground || activation == Denied,
+                activation,
+                Some("hide failed".into()),
+            );
+            assert!(result.launched && result.accepted);
+            assert!(!result.readiness_verified);
+            assert_eq!(result.warning.as_deref(), Some("hide failed"));
+            assert_eq!(serde_json::to_value(&result).unwrap()["accepted"], true);
+        }
     }
     #[test]
-    fn hide_failure_is_success_with_warning_not_a_second_launch() {
-        let result = finish(|| Ok(()), || Err("window unavailable".into())).unwrap();
-        assert!(result.launched);
-        assert!(result.warning.unwrap().contains("application opened"));
+    fn launch_failure_retains_launcher() {
+        let result = launch_catalog_app_with_context(
+            &CatalogCache::default(),
+            "missing",
+            &|| panic!("must not hide after failure"),
+            &|| false,
+        );
+        assert!(result.is_err());
     }
     #[test]
     fn launch_guard_rejects_concurrent_requests_and_releases_after_failure() {

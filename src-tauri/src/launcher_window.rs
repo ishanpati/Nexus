@@ -17,6 +17,7 @@ fn upper_center(
 /// All entry points that summon NEXUS use this function. Dragged positions are
 /// intentionally temporary; focus changes alone must never reposition the bar.
 pub fn show(window: &WebviewWindow) -> tauri::Result<()> {
+    crate::installed_apps::foreground::invalidate();
     let active = crate::active_monitor::center()
         .and_then(|(x, y)| window.monitor_from_point(x, y).ok().flatten());
     let monitor = match active {
@@ -41,6 +42,7 @@ pub fn show(window: &WebviewWindow) -> tauri::Result<()> {
 
 pub fn toggle(window: &WebviewWindow) -> tauri::Result<()> {
     if window.is_visible()? {
+        crate::installed_apps::foreground::invalidate();
         window.hide()
     } else {
         show(window)
@@ -61,6 +63,7 @@ pub fn start_launcher_drag(window: WebviewWindow) -> Result<(), String> {
 
 #[tauri::command]
 pub fn hide_launcher(window: WebviewWindow) -> Result<(), String> {
+    crate::installed_apps::foreground::invalidate();
     window
         .hide()
         .map_err(|error| format!("Windows could not hide the command bar: {error}"))

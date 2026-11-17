@@ -104,3 +104,35 @@ test("file confirmation and reveal retain selected paths and explicit confirmati
   await dispatchResult(row, { ...handlers, file }, { fileAction: "reveal" });
   assert.deepEqual(calls, [[row.file, "open", undefined], [row.file, "open", true], [row.file, "reveal", undefined]]);
 });
+
+
+test("accepted app clears query without a second hide, including denied or windowless activation", async () => {
+  const apps = indexApplications([{ id: "catalog-app", display_name: "Example", launch: { method: "shell_app" }, sources: [] }]);
+  const row = searchCommandsAndApps("exa", apps)[0];
+  for (const activation of ["foreground", "denied", "timed_out", "suppressed"]) {
+    const ui = harness("exa"); let calls = 0;
+    const outcome = await executeWithLifecycle(() => dispatchResult(row, { ...handlers, app: async () => {
+      calls++; return { launched: true, accepted: true, window_detected: activation !== "timed_out", activation, warning: null };
+    } }), { ...ui.lifecycle, hide: async () => assert.fail("native handoff already handled hiding") });
+    assert.equal(outcome.status, "success"); assert.equal(calls, 1); assert.equal(ui.state.query, "");
+  }
+});
+
+test("app launch failure retains partial query and selection", async () => {
+  const apps = indexApplications([{ id: "missing", display_name: "Example", launch: { method: "shell_app" }, sources: [] }]);
+  const ui = harness("exa");
+  await executeWithLifecycle(() => dispatchResult(searchCommandsAndApps("exa", apps)[0], { ...handlers, app: async () => { throw Error("Launch refused"); } }), ui.lifecycle);
+  assert.equal(ui.state.query, "exa"); assert.equal(ui.state.selected, 3); assert.equal(ui.state.hidden, false); assert.match(ui.state.error, /Launch refused/);
+});
+
+
+test("Enter release retains selected identity, consumes once, and cancels interrupted gestures", async () => {
+  const { createEnterRelease } = await import("../src/resultExecution.ts");
+  const gate = createEnterRelease();
+  const original = { id: "selected-at-keydown" };
+  gate.arm(original); gate.arm({ id: "repeat-must-not-replace" });
+  assert.equal(gate.take(), original); assert.equal(gate.take(), undefined);
+  for (const interruption of ["Escape", "blur", "query-change", "click", "summon"]) {
+    gate.arm(original); gate.cancel(); assert.equal(gate.take(), undefined, interruption);
+  }
+});

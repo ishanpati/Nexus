@@ -30,9 +30,16 @@ with `not_executed`; their earlier successful siblings stay successful. A prefli
 error may mark its offending step failed without a preceding `step_started` event.
 Malformed document-level data may fail the run without one attributable step.
 
-App success means Windows accepted activation: output is
-`{"accepted":true,"readiness_verified":false}`. It does not mean the app has finished
-loading. Settings, lock and sleep also report Windows acceptance, not verified
+App success means Windows accepted the launch. Output retains `accepted: true`
+and `readiness_verified: false`, and adds `launched`, `window_detected`,
+`activation` (`foreground`, `denied`, `timed_out`, or `suppressed`), and `warning`.
+Only `foreground` means the selected native window was observed in the foreground.
+Activation failure, ambiguity, cancellation of activation, or a windowless app does
+not turn an accepted launch into a failed action. Discovery finishes on the current
+worker before the next step; there is no detached activation from earlier steps.
+Cancellation interrupts discovery without rolling back an admitted launch. The
+original workflow input/interaction intent also gates later steps' activation.
+See [foreground launching](../FOREGROUND_LAUNCHING.md). Settings, lock and sleep also report Windows acceptance, not verified
 arrival at a Settings page or a completed power/session transition.
 
 ## Confirmation and cancellation

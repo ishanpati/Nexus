@@ -13,26 +13,28 @@ use windows::{
     core::{Interface, PCWSTR, w},
 };
 
-pub(crate) fn on_sta<T: Send + 'static>(
-    operation: impl FnOnce() -> Result<T, String> + Send + 'static,
+pub(crate) fn on_sta<T: Send>(
+    operation: impl FnOnce() -> Result<T, String> + Send,
 ) -> Result<T, String> {
-    std::thread::Builder::new()
-        .name("nexus-shell".into())
-        .spawn(move || {
-            unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok() }
-                .map_err(|e| e.to_string())?;
-            struct Apartment;
-            impl Drop for Apartment {
-                fn drop(&mut self) {
-                    unsafe { CoUninitialize() };
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .name("nexus-shell".into())
+            .spawn_scoped(scope, move || {
+                unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok() }
+                    .map_err(|e| e.to_string())?;
+                struct Apartment;
+                impl Drop for Apartment {
+                    fn drop(&mut self) {
+                        unsafe { CoUninitialize() };
+                    }
                 }
-            }
-            let _apartment = Apartment;
-            operation()
-        })
-        .map_err(|e| format!("Could not start Windows Shell work: {e}"))?
-        .join()
-        .map_err(|_| "Windows Shell work stopped unexpectedly.".to_string())?
+                let _apartment = Apartment;
+                operation()
+            })
+            .map_err(|e| format!("Could not start Windows Shell work: {e}"))?
+            .join()
+            .map_err(|_| "Windows Shell work stopped unexpectedly.".to_string())?
+    })
 }
 
 fn wide(value: &str) -> Vec<u16> {
@@ -102,7 +104,7 @@ pub(super) fn check_available(app: &InstalledApp) -> Result<(), String> {
     Ok(())
 }
 
-pub(super) fn launch(app: &InstalledApp) -> Result<(), String> {
+pub(super) fn launch(app: &InstalledApp) -> Result<super::foreground_windows::Receipt, String> {
     validate(app)?;
     let result = match &app.launch {
         LaunchTarget::Shortcut { path, .. } => {
@@ -114,12 +116,14 @@ pub(super) fn launch(app: &InstalledApp) -> Result<(), String> {
             let path = wide(&shell_path(path));
             let mut info = SHELLEXECUTEINFOW {
                 cbSize: std::mem::size_of::<SHELLEXECUTEINFOW>() as u32,
-                fMask: SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI,
+                fMask: SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI,
                 lpFile: PCWSTR(path.as_ptr()),
                 nShow: SW_SHOWNORMAL.0,
                 ..Default::default()
             };
-            unsafe { ShellExecuteExW(&mut info) }.map_err(|e| e.to_string())
+            unsafe { ShellExecuteExW(&mut info) }
+                .map(|_| super::foreground_windows::Receipt::shell(info.hProcess))
+                .map_err(|e| e.to_string())
         }
         LaunchTarget::PackagedApp {
             app_user_model_id, ..
@@ -133,8 +137,10 @@ pub(super) fn launch(app: &InstalledApp) -> Result<(), String> {
             }
             .map_err(|e| e.to_string())?;
             let id = wide(app_user_model_id);
+            // Supported COM foreground delegation; failure does not reject launch.
+            let _ = unsafe { CoAllowSetForegroundWindow(&activation, None) };
             unsafe { activation.ActivateApplication(PCWSTR(id.as_ptr()), w!(""), AO_NONE) }
-                .map(|_| ())
+                .map(super::foreground_windows::Receipt::activated)
                 .map_err(|e| e.to_string())
         }
         LaunchTarget::ShellApp { parsing_name, .. } => {
@@ -142,12 +148,17 @@ pub(super) fn launch(app: &InstalledApp) -> Result<(), String> {
             let pidl = unsafe { SHGetIDListFromObject(&item) }.map_err(|e| e.to_string())?;
             let mut info = SHELLEXECUTEINFOW {
                 cbSize: std::mem::size_of::<SHELLEXECUTEINFOW>() as u32,
-                fMask: SEE_MASK_INVOKEIDLIST | SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI,
+                fMask: SEE_MASK_NOCLOSEPROCESS
+                    | SEE_MASK_INVOKEIDLIST
+                    | SEE_MASK_NOASYNC
+                    | SEE_MASK_FLAG_NO_UI,
                 lpIDList: pidl.cast(),
                 nShow: SW_SHOWNORMAL.0,
                 ..Default::default()
             };
-            let result = unsafe { ShellExecuteExW(&mut info) }.map_err(|e| e.to_string());
+            let result = unsafe { ShellExecuteExW(&mut info) }
+                .map(|_| super::foreground_windows::Receipt::shell(info.hProcess))
+                .map_err(|e| e.to_string());
             unsafe { CoTaskMemFree(Some(pidl.cast())) };
             result
         }
@@ -302,7 +313,7 @@ mod tests {
         );
         let check = app.clone();
         assert!(on_sta(move || check_available(&check)).is_err());
-        assert!(on_sta(move || launch(&app)).is_err());
+        assert!(on_sta(move || launch(&app).map(|_| ())).is_err());
         let app = InstalledApp::new(
             "Invalid package".into(),
             LaunchTarget::PackagedApp {
@@ -315,7 +326,7 @@ mod tests {
         let check = app.clone();
         assert!(on_sta(move || check_available(&check)).is_err());
         assert!(
-            on_sta(move || launch(&app))
+            on_sta(move || launch(&app).map(|_| ()))
                 .unwrap_err()
                 .contains("Invalid packaged application ID")
         );

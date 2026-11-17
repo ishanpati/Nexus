@@ -423,6 +423,8 @@ pub async fn save_workflow(
                 audio: &audio,
                 system: &system,
                 activity: &activity,
+                launch_hide: None,
+                launch_cancelled: None,
             },
         )?;
         Ok(references(

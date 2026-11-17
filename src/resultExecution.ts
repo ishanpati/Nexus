@@ -7,7 +7,17 @@ import type { WindowsAction, SystemOutcome } from "./services/systemActionServic
 
 export type ResultItem = SearchItem | { kind: "file"; key: string; label: string; file: Pick<FileResult, "full_path"> };
 export type ExecutionOptions = { fileAction?: FileAction; confirmed?: boolean; token?: string };
-type Outcome = { status: "success"; message?: string; warning?: string | null }
+
+/** Retain the selected row until the launch gesture ends, before sampling native input intent. */
+export function createEnterRelease<T>() {
+  let pending: T | undefined;
+  return {
+    arm(row: T) { pending ??= row; },
+    take() { const row = pending; pending = undefined; return row; },
+    cancel() { pending = undefined; },
+  };
+}
+type Outcome = { status: "success"; message?: string; warning?: string | null; launcherHandled?: boolean }
   | { status: "help"; message: string }
   | { status: "file_confirmation"; path: string; message: string }
   | { status: "sleep_confirmation"; token: string; message: string };
@@ -27,7 +37,7 @@ export async function dispatchResult(result: ResultItem, handlers: Handlers, opt
     case "app": {
       const outcome = await handlers.app(result.app.id);
       if (!outcome.launched) throw new Error("Windows did not confirm opening the application.");
-      return { status: "success", warning: outcome.warning };
+      return { status: "success", warning: outcome.warning, launcherHandled: true };
     }
     case "file": {
       const outcome = await handlers.file(result.file, options.fileAction ?? "open", options.confirmed);
@@ -66,7 +76,7 @@ export async function executeWithLifecycle(operation: () => Promise<Outcome>, li
   }
   if (outcome.status === "success") {
     lifecycle.reset();
-    try { await lifecycle.hide(); }
+    try { if (!outcome.launcherHandled) await lifecycle.hide(); }
     catch (error) { lifecycle.error("Action succeeded, but NEXUS could not hide. Do not repeat it. " + String(error)); }
   }
   return outcome;

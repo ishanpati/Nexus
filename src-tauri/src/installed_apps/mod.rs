@@ -1,5 +1,8 @@
 //! Discovery, ID-only launching and local icons. Only backend catalog entries
 //! may supply launch targets; frontend search text is never execution authority.
+pub(crate) mod foreground;
+#[cfg(windows)]
+mod foreground_windows;
 pub mod icons;
 pub mod launching;
 mod model;

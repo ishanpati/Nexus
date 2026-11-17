@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { flushSync } from "react-dom";
 import { searchCommandsAndApps } from "./commandSearch";
-import { dispatchResult, executeWithLifecycle, type ExecutionOptions, type ResultItem as ExecutableResult } from "./resultExecution";
+import { createEnterRelease, dispatchResult, executeWithLifecycle, type ExecutionOptions, type ResultItem as ExecutableResult } from "./resultExecution";
 import { createSystemActions, systemActionError } from "./services/systemActionService";
 import { SleepConfirmation } from "./components/SleepConfirmation";
 import { createAudioActions, isAudioAction, audioStateMessage } from "./services/audioService";
@@ -46,6 +46,7 @@ function App() {
   const [confirmation, setConfirmation] = useState<{ path: string; message: string } | null>(null);
   const [sleepConfirmation, setSleepConfirmation] = useState<{ token: string; message: string } | null>(null);
   const runningRef = useRef(false);
+  const enterRelease = useRef(createEnterRelease<ResultItem>());
   const resultsRef = useRef<HTMLElement>(null);
   const optionRefs = useRef(new Map<string, HTMLLIElement>());
   const [visibleCount, setVisibleCount] = useState(RESULT_BATCH_SIZE);
@@ -119,6 +120,7 @@ function App() {
   }
 
   function resetExecution() {
+    enterRelease.current.cancel();
     setQuery(""); setSelectedIndex(0); setVisibleCount(RESULT_BATCH_SIZE);
     setMessage(""); setCommandError(""); setConfirmation(null); setSleepConfirmation(null);
     resultsRef.current?.scrollTo({ top: 0 });
@@ -137,6 +139,7 @@ function App() {
 
   async function runResult(result: ExecutableResult, options: ExecutionOptions = {}) {
     if (runningRef.current) return;
+    enterRelease.current.cancel();
     runningRef.current = true; setIsRunning(true); setCommandError(""); setMessage("");
     audioReadGeneration.current++;
     setAudioSummary("");
@@ -178,6 +181,7 @@ function App() {
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") enterRelease.current.cancel();
     if (event.nativeEvent.isComposing) return;
     if (progressOpen && ["ArrowDown", "ArrowUp", "Enter"].includes(event.key)) { event.preventDefault(); return; }
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -190,6 +194,10 @@ function App() {
     } else if (event.key === "Enter") {
       event.preventDefault();
       if (selected && !event.repeat) {
+        if (selected.kind === "app" || selected.kind === "workflow") {
+          if (!runningRef.current) enterRelease.current.arm(selected);
+          return;
+        }
         if (event.ctrlKey && selected.kind === "file" && canActivateFile(fileLoading, files.resultQuery, fileQuery)) void runFile(selected.file, "reveal");
         else activate(selected);
       }
@@ -240,6 +248,7 @@ function App() {
           placeholder="What would you like to do?"
           value={query}
           onChange={(event) => {
+            enterRelease.current.cancel();
             setQuery(event.currentTarget.value);
             setProgressOpen(false);
             setSelectedIndex(0);
@@ -247,6 +256,15 @@ function App() {
             setCommandError("");
           }}
           onKeyDown={handleKeyDown}
+          onKeyUp={(event) => {
+            if (event.key !== "Enter") return;
+            const row = enterRelease.current.take();
+            if (row && !event.nativeEvent.isComposing && !runningRef.current && !progressOpen) {
+              event.preventDefault();
+              activate(row);
+            }
+          }}
+          onBlur={() => enterRelease.current.cancel()}
         />
         <button className="escape-button" onClick={() => void hideWindow()} aria-label="Hide NEXUS">esc</button>
       </div>

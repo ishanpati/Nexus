@@ -13,6 +13,8 @@ pub struct NativeRuntime<'a> {
     pub audio: &'a AudioService,
     pub system: &'a SystemActions,
     pub activity: &'a Arc<LaunchActivity>,
+    pub launch_hide: Option<&'a (dyn Fn() -> std::result::Result<(), String> + Sync)>,
+    pub launch_cancelled: Option<&'a (dyn Fn() -> bool + Sync)>,
 }
 fn failure(message: String) -> RegistryError {
     RegistryError::new(ErrorCode::ExecutionFailed, message)
@@ -51,8 +53,14 @@ impl ActionRuntime for NativeRuntime<'_> {
             .activity
             .acquire()
             .map_err(|message| RegistryError::new(ErrorCode::Busy, message))?;
-        crate::installed_apps::launching::launch_catalog_app(self.catalog, id).map_err(failure)?;
-        Ok(serde_json::json!({ "accepted": true, "readiness_verified": false }))
+        let outcome = crate::installed_apps::launching::launch_catalog_app_with_context(
+            self.catalog,
+            id,
+            self.launch_hide.unwrap_or(&|| Ok(())),
+            self.launch_cancelled.unwrap_or(&|| false),
+        )
+        .map_err(failure)?;
+        serialized(outcome)
     }
     fn open_path(&mut self, path: &str, directory: bool, confirmed: bool) -> Result<Value> {
         let _guard = self
