@@ -3,6 +3,7 @@ export interface CommandArguments {
   open_notepad: Record<string, never>;
   create_workflow: Record<string, never>;
   edit_workflow: Record<string, never>;
+  help: Record<string, never>;
 }
 
 export type CommandId = keyof CommandArguments;
@@ -18,10 +19,16 @@ export interface Command<Id extends CommandId = CommandId> {
   readonly description: string;
   readonly aliases: readonly string[];
   readonly request: Extract<CommandRequest, { id: Id }>;
-  readonly discovery: Pick<CapabilityRegistration, "category" | "examples" | "discoverable">;
+  readonly discovery: Pick<CapabilityRegistration, "category" | "examples" | "discoverable"> & Partial<Pick<CapabilityRegistration, "id" | "availability">>;
 }
 
 export const commandRegistry = {
+  help: {
+    id: "help", label: "Help", description: "Explore commands, search modes and keyboard shortcuts in NEXUS Help.",
+    aliases: [], request: { id: "help", args: {} },
+    discovery: { id: "nexus.help", category: "General NEXUS commands", examples: ["help"], discoverable: true,
+      availability: { status: "available", reason: "NEXUS Help is available from the launcher." } },
+  },
   create_workflow: {
     id: "create_workflow", label: "Create workflow", description: "Start a draft in Workflow Studio",
     aliases: [], request: { id: "create_workflow", args: {} },

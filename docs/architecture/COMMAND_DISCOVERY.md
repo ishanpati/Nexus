@@ -1,5 +1,13 @@
 # v0.5.2 Stage A: command discovery metadata
 
+Stage B now implements the [interactive Help Center](../features/HELP_CENTER.md).
+The Stage A report below is historical: `nexus.help` is now backed by the real
+`help` command in `commands.ts`, with the same discovery ID and available status.
+The catalog still has 42 entries (14 implemented typed command families rather
+than 13 plus a reserved entry). Native discovery also returns `applicationVersion`
+from the running Tauri package; `createCommandDiscoverySnapshotService` exposes
+that version and the catalog while the existing array-only service stays usable.
+
 Implemented on `feature/help-center`. This stage supplies a read-only discovery
 catalog; it does not create a Help Center window, voice input, parser, dispatcher,
 runtime service, or additional execution permission. Package versions stay 0.5.1.

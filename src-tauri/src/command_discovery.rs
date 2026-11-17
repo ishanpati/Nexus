@@ -8,6 +8,7 @@ use serde::Serialize;
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiscoveryMetadata {
+    application_version: String,
     actions: Vec<ActionDescriptor>,
     launcher_shortcut: ShortcutStatus,
     file_search: Availability,
@@ -28,6 +29,7 @@ fn file_availability(result: Result<(), String>) -> Availability {
 
 #[tauri::command]
 pub async fn command_discovery_metadata(
+    app: tauri::AppHandle,
     registry: tauri::State<'_, ActionRegistry>,
     shortcut: tauri::State<'_, ShortcutStatus>,
 ) -> Result<DiscoveryMetadata, String> {
@@ -39,6 +41,7 @@ pub async fn command_discovery_metadata(
     .await
     .map_err(|error| error.to_string())?;
     Ok(DiscoveryMetadata {
+        application_version: app.package_info().version.to_string(),
         actions,
         launcher_shortcut,
         file_search,
@@ -64,6 +67,7 @@ mod tests {
     fn metadata_serializes_authoritative_schemas_without_executors() {
         let registry = ActionRegistry::default();
         let metadata = DiscoveryMetadata {
+            application_version: env!("CARGO_PKG_VERSION").into(),
             actions: registry.descriptors(),
             launcher_shortcut: ShortcutStatus {
                 keys: crate::shortcut::LABEL.into(),

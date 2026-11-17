@@ -22,6 +22,7 @@ describes the v0.5 boundaries, module responsibilities, local data flow, and IPC
 | --- | --- |
 | Action contracts | [Action Registry: metadata, validation, extension, and confirmation](architecture/ACTION_REGISTRY.md) |
 | Command discovery | [Registry-driven capabilities, shortcuts, availability, and extension](architecture/COMMAND_DISCOVERY.md) |
+| Help Center | [Native window, interactive reference, security, and verification](features/HELP_CENTER.md) |
 | File search | [Everything integration and opening policy](features/file-search/FILE_SEARCH.md) · [Retrieval, ranking, and limits](features/file-search/FILE_SEARCH_RANKING.md) |
 | Foreground app launching | [Native handoff, identity, outcomes, and acceptance checks](features/FOREGROUND_LAUNCHING.md) |
 | Windows controls | [Native audio](features/AUDIO_CONTROLS.md) · [Settings, lock, and sleep](features/SYSTEM_ACTIONS.md) |

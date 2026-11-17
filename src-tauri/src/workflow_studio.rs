@@ -105,7 +105,7 @@ pub(crate) fn launcher_close(active_run: bool, studio_exists: bool) -> LauncherC
 }
 
 // Keep sequencing independently testable without opening native windows.
-fn activate<T>(
+pub(crate) fn activate<T>(
     existing: Option<T>,
     create: impl FnOnce() -> Result<T, String>,
     ready: impl FnOnce() -> Result<(), String>,

@@ -6,6 +6,7 @@ mod command_discovery;
 mod commands;
 mod file_actions;
 pub mod file_search;
+mod help_center;
 pub mod installed_apps;
 mod launcher_window;
 mod shortcut;
@@ -37,6 +38,7 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            app.manage(help_center::HelpCenter::default());
             app.manage(workflow_studio::Studio::default());
             app.manage(action_registry::ActionRegistry::default());
             app.manage(workflow_execution::Engine::default());
@@ -59,6 +61,12 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if window.label() == help_center::LABEL
+                && let tauri::WindowEvent::CloseRequested { api, .. } = event
+            {
+                api.prevent_close();
+                let _ = window.hide();
+            }
             if window.label() == workflow_studio::LABEL {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
@@ -119,6 +127,8 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            help_center::open_help_center,
+            help_center::help_center_ready,
             command_discovery::command_discovery_metadata,
             workflow_picker::pick_workflow_path,
             workflow_studio::open_workflow_studio,

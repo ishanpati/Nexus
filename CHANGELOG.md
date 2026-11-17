@@ -9,8 +9,10 @@ acceptance. See the [release index](docs/releases/README.md) for status and setu
 
 - v0.5.2 Stage A: registry-driven command, search-mode, action, interaction and
   shortcut discovery metadata with a typed read-only service, authoritative Rust
-  action contracts, and explicit dependency/shortcut availability. Help is reserved
-  as unavailable metadata; the Help Center UI is not included.
+  action contracts, and explicit dependency/shortcut availability.
+- v0.5.2 Stage B: lazy native NEXUS Help window, opened by `help` or partial result
+  selection. Includes registry-generated categories and reference cards, local
+  search, parameter/policy details, version metadata and copy-only examples.
 
 ## 0.5.1 ? 2026-11-17 ? Release candidate
 

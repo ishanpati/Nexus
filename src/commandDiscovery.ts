@@ -27,16 +27,16 @@ export function discoverCapabilities(native: NativeDiscoveryMetadata, registrati
   const actions = new Map(native.actions.map(action => [action.id, action]));
   if (actions.size !== native.actions.length) throw new Error("Duplicate action metadata ID.");
   const entries: readonly CapabilityRegistration[] = [
+    { id: "shortcut.launcher", kind: "shortcut", displayName: "Show or hide NEXUS", category: "Getting Started",
+      description: "Toggle the launcher globally. Summoning starts with a cleared, focused input. Launching NEXUS again also reopens its existing instance.",
+      syntax: native.launcherShortcut.keys, aliases: [], examples: [native.launcherShortcut.keys], discoverable: true,
+      availability: { status: native.launcherShortcut.registered ? "available" : "unavailable", reason: native.launcherShortcut.warning ?? "Global shortcut registered." } },
     ...registrations,
     ...native.actions.map(action => ({
       id: `action.${action.id}`, kind: "action" as const, displayName: action.display_name,
       description: action.description, category: action.category, syntax: `Workflow Studio > Add action > ${action.display_name}`,
       aliases: [], examples: [`Workflow Studio > ${action.display_name}`], discoverable: true, actionIds: [action.id],
     })),
-    { id: "shortcut.launcher", kind: "shortcut", displayName: "Show or hide NEXUS", category: "Getting Started",
-      description: "Toggle the launcher globally. Summoning starts with a cleared, focused input. Launching NEXUS again also reopens its existing instance.",
-      syntax: native.launcherShortcut.keys, aliases: [], examples: [native.launcherShortcut.keys], discoverable: true,
-      availability: { status: native.launcherShortcut.registered ? "available" : "unavailable", reason: native.launcherShortcut.warning ?? "Global shortcut registered." } },
   ];
   const ids = new Set<string>();
   return entries.filter(entry => entry.discoverable).map(entry => {

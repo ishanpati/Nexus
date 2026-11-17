@@ -30,6 +30,7 @@ export interface DiscoverableCapability extends CapabilityRegistration {
 }
 
 export interface NativeDiscoveryMetadata {
+  readonly applicationVersion: string;
   readonly actions: readonly WorkflowActionDescriptor[];
   readonly launcherShortcut: { readonly keys: string; readonly registered: boolean; readonly warning: string | null };
   readonly fileSearch: Availability;

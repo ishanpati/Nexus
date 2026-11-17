@@ -150,6 +150,7 @@ Building it yourself? Start with the [development instructions](docs/USER_GUIDE.
 | --- | --- |
 | Open an app | Its name, such as `calculator` or `visual` |
 | Open a fresh Notepad | `open notepad` |
+| Explore commands and shortcuts | `help` (current development branch) |
 | Find a file or folder | `f meeting notes` |
 | Set or adjust volume | `volume 35`, `volume +10`, `volume down` |
 | Mute, unmute, or read audio state | `mute`, `unmute`, `audio status` |

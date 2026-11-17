@@ -107,6 +107,24 @@ See [FILE_SEARCH.md](features/file-search/FILE_SEARCH.md) for semantics and diag
 [CHANGELOG.md](../CHANGELOG.md) for release changes, and
 [RELEASE_VERIFICATION.md](verification/RELEASE_VERIFICATION.md) for actual verification results.
 
+## Help Center (v0.5.2 development)
+
+Type `help` and press Enter, or select Help from a partial search such as `hel`.
+NEXUS opens its Help Center in a separate window and clears/hides the launcher
+after the window opens successfully. Repeating the command focuses the same
+window. Closing Help keeps NEXUS and Workflow Studio running.
+
+Use the search field and category buttons together to find names, aliases,
+syntax, descriptions and examples. Expand parameter and workflow details for
+limits and approval requirements. Copy beside an example copies exactly that
+text; it does not run a command. You can paste it into the launcher later.
+Tab/Shift+Tab move through controls; the reference and category navigation scroll
+independently. Refresh reloads local metadata and prerequisite status.
+
+The displayed version comes from the running app. Missing Everything/ES and
+shortcut conflicts remain visible. Some device and target availability can only
+be checked when a command is used. [Implementation and verification](features/HELP_CENTER.md).
+
 ## Creating and managing workflows
 
 1. Type `create workflow` and activate the selected result. Workflow Studio opens

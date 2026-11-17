@@ -8,9 +8,12 @@ const audioFeedback = new URLSearchParams(window.location.search).has("audio-fee
 if (audioFeedback) document.body.classList.add("audio-overlay-body");
 const studio = new URLSearchParams(window.location.search).has("workflow-studio");
 if (studio) document.body.classList.add("studio-body");
+const help = new URLSearchParams(window.location.search).has("help-center");
+if (help) { document.body.classList.add("help-body"); document.title = "NEXUS Help"; }
+const HelpCenter = React.lazy(() => import("./components/HelpCenter").then(module => ({ default: module.HelpCenter })));
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    {audioFeedback ? <AudioFeedback /> : studio ? <WorkflowStudio /> : <App />}
+    {audioFeedback ? <AudioFeedback /> : studio ? <WorkflowStudio /> : help ? <React.Suspense fallback={<p role="status">Loading NEXUS Help…</p>}><HelpCenter /></React.Suspense> : <App />}
   </React.StrictMode>,
 );

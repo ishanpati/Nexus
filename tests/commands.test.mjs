@@ -14,7 +14,7 @@ test("normalizes case, surrounding whitespace, and repeated spaces", () => {
 
 test("supports partial searches and empty-input suggestions", () => {
   assert.equal(findCommands("note")[0]?.id, "open_notepad");
-  assert.equal(findCommands("   ").length, 3);
+  assert.equal(findCommands("   ").length, 4);
 });
 
 test("does not turn paths, command suffixes, or unknown apps into results", () => {
@@ -24,6 +24,6 @@ test("does not turn paths, command suffixes, or unknown apps into results", () =
 });
 
 test("registry exposes only a fixed ID and an empty native argument object", () => {
-  assert.deepEqual(Object.keys(commandRegistry).sort(), ["create_workflow", "edit_workflow", "open_notepad"]);
+  assert.deepEqual(Object.keys(commandRegistry).sort(), ["create_workflow", "edit_workflow", "help", "open_notepad"]);
   assert.deepEqual(commandRegistry.open_notepad.request, { id: "open_notepad", args: {} });
 });

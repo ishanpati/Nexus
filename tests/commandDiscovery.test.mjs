@@ -33,15 +33,15 @@ test("public IDs, descriptions, syntax and examples are complete and serializabl
 
 test("all command families, modes, workflow actions and existing controls are discovered", () => {
   const items = discoverCapabilities(native), ids = new Set(items.map(item => item.id));
-  for (const command of Object.values(commandRegistry)) assert.ok(ids.has(`command.${command.id}`));
+  for (const command of Object.values(commandRegistry)) assert.ok(ids.has(command.discovery.id ?? `command.${command.id}`));
   for (const command of systemCommandRegistry) assert.ok(ids.has(`system.${command.id}`));
   for (const mode of searchModeRegistry) assert.ok(ids.has(mode.id));
   for (const action of actions) assert.ok(ids.has(`action.${action.id}`));
   for (const id of ["launcher.refresh_apps", "launcher.retry_files", "launcher.refresh_workflows", "launcher.workflow_runs", "studio.manage", "studio.delete", "shortcut.dismiss", "shortcut.reveal", "nexus.help"]) assert.ok(ids.has(id), id);
   assert.equal(ids.has("execute_command"), false);
   assert.equal(ids.has("clear_list"), false);
-  assert.equal(findCommands("help").length, 0); // Stage A has no Help Center executor.
-  assert.equal(items.find(item => item.id === "nexus.help").availability.status, "unavailable");
+  assert.equal(findCommands("hel")[0].id, "help");
+  assert.equal(items.find(item => item.id === "nexus.help").availability.status, "available");
 });
 
 test("new central command registrations and categories appear without editing discovery", () => {
