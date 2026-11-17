@@ -10,7 +10,7 @@ A local-first desktop launcher for Windows 11.
 
 [![Windows 11 x64](https://img.shields.io/badge/Windows_11-x64-5179c7?style=flat-square)](#install)
 [![CI](https://github.com/ishanpati/Nexus/actions/workflows/ci.yml/badge.svg?branch=master&event=push)](https://github.com/ishanpati/Nexus/actions/workflows/ci.yml)
-[![Version 0.5.0 release candidate](https://img.shields.io/badge/v0.5.0-release_candidate-c1b4ff?style=flat-square)](docs/verification/V05_VERIFICATION.md)
+[![Version 0.5.1 release candidate](https://img.shields.io/badge/v0.5.1-release_candidate-c1b4ff?style=flat-square)](docs/verification/V051_VERIFICATION.md)
 [![Tauri 2 · React · Rust](https://img.shields.io/badge/Tauri_2-React_%C2%B7_Rust-55515f?style=flat-square)](#built-for-your-desktop)
 
 [Explore](#less-searching-more-doing) · [Install](#install) · [Quick start](#make-it-a-habit) · [Documentation](#go-deeper)
@@ -30,9 +30,9 @@ into a small, keyboard-friendly bar that appears when you need it and gets out o
 No account, API key, subscription, or AI model is required. Once set up, its features
 work locally without an internet connection.
 
-> **Current status:** v0.5.0 is a release candidate. Installers have been built locally;
-> no downloadable GitHub release is published yet. Installed-app and upgrade acceptance
-> checks remain pending. [See the verification record.](docs/verification/V05_VERIFICATION.md)
+> **Current status:** v0.5.1 is a release candidate. Installers have been built locally;
+> publication is on hold. Installed-app and upgrade acceptance
+> checks remain pending. [See the verification record.](docs/verification/V051_VERIFICATION.md)
 
 ## Less searching. More doing.
 
@@ -113,7 +113,7 @@ The filenames below describe the locally built candidate, not downloadable asset
 When you have a candidate installer:
 
 1. Close NEXUS before installing or upgrading. Back up saved workflows before an upgrade.
-2. Run **`nexus_0.5.0_x64-setup.exe`**, or use **`nexus_0.5.0_x64_en-US.msi`**.
+2. Run **`nexus_0.5.1_x64-setup.exe`**, or use **`nexus_0.5.1_x64_en-US.msi`**.
    Choose one format. The installers are unsigned, so Windows may report an unknown publisher.
 3. Launch **NEXUS** from the Start menu, then press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd>
    whenever you need the bar.
@@ -200,7 +200,7 @@ your text as a shell command. [How it fits together](docs/architecture/ARCHITECT
   File search covers indexed names and paths, not file contents or advanced Everything syntax.
 - **Workflows run in sequence.** No scripts, custom executable arguments, delays,
   parallel steps, or waiting for an app to finish loading. Launch success means Windows
-  accepted the request. Cancellation stops future steps; completed actions are not undone.
+  accepted the request; foreground activation is verified separately and can be denied. Cancellation stops future steps; completed actions are not undone.
 - **History is session-only.** Active runs do not resume after exit. Closing progress
   does not cancel a run. Workflow file steps reject executable, script, and other sensitive types.
 - **Data needs a backup.** Workflows are stored in plaintext at
@@ -210,7 +210,7 @@ your text as a shell command. [How it fits together](docs/architecture/ARCHITECT
   If the global shortcut conflicts with another app, launching NEXUS again summons it.
 
 Detailed security and release caveats, including the current disabled content security
-policy, are recorded in [v0.5 verification](docs/verification/V05_VERIFICATION.md#known-limitations-and-remaining-risks).
+policy, are recorded in [v0.5 verification](docs/verification/V051_VERIFICATION.md#known-limitations-and-remaining-risks).
 
 ## Go deeper
 
@@ -221,7 +221,7 @@ policy, are recorded in [v0.5 verification](docs/verification/V05_VERIFICATION.m
 | [User guide](docs/USER_GUIDE.md) | Full controls, workflow instructions, backup, and development setup |
 | [Architecture](docs/architecture/ARCHITECTURE.md) | Local data flow, native boundaries, and module responsibilities |
 | [Changelog](CHANGELOG.md) | Changes across NEXUS milestones |
-| [v0.5 verification](docs/verification/V05_VERIFICATION.md) | Executed checks and remaining release acceptance work |
+| [v0.5 verification](docs/verification/V051_VERIFICATION.md) | Executed checks and remaining release acceptance work |
 
 Development-stage documents include historical scope notes; use the changelog and
 current verification report for release status. For bug reports, include your Windows

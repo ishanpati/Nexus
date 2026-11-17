@@ -26,6 +26,7 @@ pub fn start_workflow(
 ) -> Result<Snapshot> {
     main_window(&window)?;
     let activation_intent = crate::installed_apps::launching::activation_intent();
+    let launcher_owner = crate::installed_apps::foreground::interaction();
     let app = window.app_handle().clone();
     let events = app.clone();
     let sink: Sink = Arc::new(move |event| {
@@ -78,7 +79,12 @@ pub fn start_workflow(
         let cancelled = || run.cancelled() || !activation_intent();
         let hide = || -> std::result::Result<(), String> {
             if let Some(window) = app.get_webview_window("main")
-                && window.is_focused().map_err(|e| e.to_string())?
+                && crate::installed_apps::foreground::owns_launcher(
+                    launcher_owner,
+                    crate::installed_apps::foreground::interaction(),
+                    window.is_focused().map_err(|e| e.to_string())?,
+                    activation_intent(),
+                )
             {
                 window.hide().map_err(|e| e.to_string())?;
                 window.is_visible().map_err(|e| e.to_string())?;

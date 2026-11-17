@@ -1,8 +1,8 @@
 # NEXUS documentation
 
 Start with the [project overview](../README.md) or [user guide](USER_GUIDE.md).
-NEXUS v0.5.0 is a release candidate; installed-app, offline, and upgrade acceptance
-remain pending in the [v0.5 verification report](verification/V05_VERIFICATION.md).
+NEXUS v0.5.1 is a release candidate; see the [foreground-launch audit](verification/V051_VERIFICATION.md)
+for current checks, build artifacts, and remaining desktop/installer acceptance.
 
 ## Use NEXUS
 
@@ -41,7 +41,9 @@ describes the v0.5 boundaries, module responsibilities, local data flow, and IPC
 
 ## Review verification and release evidence
 
-Publication preparation: [v0.5.0 notes](releases/v0.5.0.md),
+Current candidate: [v0.5.1 notes](releases/v0.5.1.md) and [v0.5.1 audit](verification/V051_VERIFICATION.md).
+
+Historical publication preparation: [v0.5.0 notes](releases/v0.5.0.md),
 [GitHub Release draft](releases/v0.5.0-github-release.md), and
 [release checklist](releases/RELEASE_CHECKLIST.md). Acceptance remains pending.
 
@@ -50,6 +52,7 @@ manual checks. Historical passes do not establish acceptance of the current buil
 
 | Record | Scope |
 | --- | --- |
+| [v0.5.1 Stage B](verification/V051_VERIFICATION.md) | Foreground regressions, release metadata, production packaging, and acceptance gaps |
 | [v0.5 Stage G](verification/V05_VERIFICATION.md) | Candidate audit, packaging, known risks, and pending release acceptance |
 | [v0.4](verification/V04_VERIFICATION.md) | Windows controls regression, diagnostics, and packaging |
 | [v0.3](verification/RELEASE_VERIFICATION.md) | File-search release checks and pending desktop/installation checks |
@@ -63,7 +66,7 @@ These are records of local builds, not published downloads or hashes of later re
 ## Read stage documents in context
 
 Feature documents retain development-stage scope, test results, and future-tense
-notes. Use the architecture, user guide, changelog, and v0.5 report for current
+notes. Use the architecture, user guide, changelog, and v0.5.1 report for current
 implemented behavior. A stage's exclusions or proposed next steps describe that
 stage, not a current roadmap or an unimplemented feature claim.
 

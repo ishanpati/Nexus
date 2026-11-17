@@ -7,6 +7,38 @@ acceptance. See the [release index](docs/releases/README.md) for status and setu
 
 ## Unreleased
 
+No additional changes recorded.
+
+## 0.5.1 ? 2026-11-17 ? Release candidate
+
+[Release notes](docs/releases/v0.5.1.md) ? [Verification](docs/verification/V051_VERIFICATION.md)
+
+### Fixed
+
+- Installed-app launches share bounded native foreground discovery, minimized-window
+  restoration, verified activation, and taskbar flashing when Windows denies focus.
+- Preserve shortcut arguments/working directories and packaged activation. Match
+  trusted native identities, exclude DWM-cloaked windows, and reject ambiguous
+  background profiles or unrelated new windows sharing an argument-driven host.
+- Capture activation intent at action admission, before worker/COM/catalog delay;
+  preserve run-wide workflow intent and suppress stale or cancelled activation.
+- Hide the owned launcher after accepted launches even when Shell already moved
+  focus. Preserve a newly summoned launcher or a newer query. Avoid a second hide.
+- Report activation deadline expiry as timeout, independently of launch acceptance.
+- App/workflow Enter dispatch retains the selected row until key release and
+  consumes it once; interruption and repeated key-down do not duplicate execution.
+
+### Known limitations
+
+- Windows can deny foreground activation. Missing/ambiguous identities, hosted or
+  unusual windows, windowless apps and slow startup can leave activation unverified.
+- Foreground verification is point-in-time; readiness is not verified. Cancellation
+  cannot recall an admitted native launch or stop an app's own future focus changes.
+- Desktop, installed/upgrade and disconnected-runtime acceptance are reported
+  separately in the verification record; passing tests/builds do not establish them.
+- Installer identity, workflow data/schema, dependency versions and runtime local-first
+  requirements are unchanged. Packages are prepared without tags or publication.
+
 ### Added
 
 - Windows GitHub Actions CI for frontend tests, TypeScript/Vite, Rust formatting,

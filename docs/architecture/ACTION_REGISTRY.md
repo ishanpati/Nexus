@@ -49,8 +49,9 @@ Errors include a stable code, message, optional parameter name and native detail
   It rechecks catalog membership, path existence/type and sensitivity before open.
   App IDs cannot supply executable names or argument strings. Settings cannot
   supply an arbitrary URI. Native audio errors retain `may_have_changed` details.
-- Adapters perform no launcher hide/reset or usage writes. The existing launcher
-  still owns its original UI lifecycle. A future runner must call dispatch on a
+- Adapters perform no query reset or usage writes. In v0.5.1 the app adapter
+  forwards caller-owned hide/cancellation callbacks through the shared native
+  launcher; the workflow callback targets only the owned main window. A future runner must call dispatch on a
   worker thread and decide presentation/usage policy separately.
 
 Stage C now adds [workflow execution IPC](../features/workflows/WORKFLOW_EXECUTION.md) and an independent

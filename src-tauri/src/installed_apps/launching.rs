@@ -101,6 +101,9 @@ pub async fn launch_installed_app(
     window: tauri::WebviewWindow,
 ) -> Result<LaunchOutcome, String> {
     let guard = activity.inner().acquire()?;
+    // Capture on admission, before worker queueing, COM setup or catalog reads.
+    let intent = activation_intent();
+    let launcher_owner = super::foreground::interaction();
     let cache = cache.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
         let _guard = guard;
@@ -108,6 +111,14 @@ pub async fn launch_installed_app(
             &cache,
             &app_id,
             &|| {
+                if !super::foreground::owns_launcher(
+                    launcher_owner,
+                    super::foreground::interaction(),
+                    window.is_focused().map_err(|e| e.to_string())?,
+                    intent(),
+                ) {
+                    return Ok(());
+                }
                 window
                     .hide()
                     // Flush the window dispatcher before sampling the restored
@@ -115,7 +126,7 @@ pub async fn launch_installed_app(
                     .and_then(|_| window.is_visible().map(|_| ()))
                     .map_err(|e| format!("Application opened, but NEXUS could not hide: {e}"))
             },
-            &|| false,
+            &|| !intent(),
         )
     })
     .await

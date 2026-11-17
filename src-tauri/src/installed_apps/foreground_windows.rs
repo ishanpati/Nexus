@@ -1,6 +1,6 @@
 use super::{
     InstalledApp, LaunchTarget,
-    foreground::{self, Candidate, Desktop},
+    foreground::{self, AppIdentity, Candidate, Desktop, Intent, WindowIdentity},
     launching::LaunchOutcome,
 };
 use std::{
@@ -10,6 +10,7 @@ use std::{
 use windows::{
     Win32::{
         Foundation::{CloseHandle, HANDLE, HWND, LPARAM, PROPERTYKEY},
+        Graphics::Dwm::{DWMWA_CLOAKED, DwmGetWindowAttribute},
         Storage::Packaging::Appx::GetApplicationUserModelId,
         System::{
             Com::{
@@ -67,16 +68,32 @@ fn input() -> Option<u32> {
         .then_some(info.dwTime)
 }
 pub(super) fn intent() -> impl Fn() -> bool + Send + Sync {
-    let stamp = input();
-    let interaction = foreground::interaction();
-    move || stamp.is_some() && input() == stamp && foreground::interaction() == interaction
+    let captured = Intent {
+        input: input(),
+        interaction: foreground::interaction(),
+    };
+    move || captured.permits(input(), foreground::interaction())
 }
 fn foreground() -> usize {
     unsafe { GetForegroundWindow() }.0 as usize
 }
+fn uncloaked(hwnd: HWND) -> bool {
+    let mut cloaked = 0u32;
+    unsafe {
+        DwmGetWindowAttribute(
+            hwnd,
+            DWMWA_CLOAKED,
+            (&mut cloaked as *mut u32).cast(),
+            std::mem::size_of::<u32>() as u32,
+        )
+    }
+    .is_ok()
+        && cloaked == 0
+}
 unsafe extern "system" fn collect(hwnd: HWND, data: LPARAM) -> BOOL {
     let list = unsafe { &mut *(data.0 as *mut Vec<usize>) };
     if unsafe { IsWindowVisible(hwnd) }.as_bool()
+        && uncloaked(hwnd)
         && unsafe { GetWindow(hwnd, GW_OWNER) }.is_err()
         && unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) } & WS_EX_TOOLWINDOW.0 as isize == 0
     {
@@ -139,9 +156,7 @@ fn image(process: HANDLE) -> Option<String> {
     Some(String::from_utf16_lossy(&buffer[..length as usize]))
 }
 struct Session<'a> {
-    id: Option<String>,
-    path: Option<String>,
-    has_arguments: bool,
+    identity: AppIdentity,
     receipt: Receipt,
     before: HashSet<usize>,
     input: Option<u32>,
@@ -164,39 +179,43 @@ impl Session<'_> {
         let process = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) }
             .ok()
             .map(Process);
-        // Explicit window IDs override process IDs (profiles and hosted windows).
-        if let Some(expected) = &self.id {
-            if let Some(actual) = window_id(hwnd) {
-                return actual == *expected;
-            }
-            if let Some(actual) = process.as_ref().and_then(|p| process_id(p.0)) {
-                return actual == *expected;
-            }
-        }
-        if let Some(expected) = &self.path {
-            // A shared EXE does not identify a shortcut's profile/arguments. Only
-            // trust a newly created window or one the Shell already foregrounded.
-            if self.has_arguments && self.before.contains(&window) && foreground() != window {
-                return false;
-            }
-            return process
-                .as_ref()
-                .and_then(|p| image(p.0))
-                .is_some_and(|actual| actual.eq_ignore_ascii_case(expected));
-        }
-        // Retaining the process handle prevents PID reuse. With packaged activation
-        // prefer AUMID, since its returned PID can belong to a shared host.
-        self.id.is_none() && self.receipt.process.is_some() && pid == self.receipt.pid
+        let window_id = self.identity.id.as_ref().and_then(|_| window_id(hwnd));
+        let process_id = self
+            .identity
+            .id
+            .as_ref()
+            .and_then(|_| process.as_ref().and_then(|p| process_id(p.0)));
+        let path = self
+            .identity
+            .path
+            .as_ref()
+            .and_then(|_| process.as_ref().and_then(|p| image(p.0)));
+        let launch_process_active = self.receipt.process.as_ref().is_some_and(|p| {
+            let mut code = 0;
+            unsafe { GetExitCodeProcess(p.0, &mut code) }.is_ok() && code == 259 // STILL_ACTIVE
+        });
+        let launched_process = self.receipt.pid == pid && launch_process_active;
+        self.identity.matches(WindowIdentity {
+            window_id: window_id.as_deref(),
+            process_id: process_id.as_deref(),
+            path: path.as_deref(),
+            launched_process,
+            launch_process_active,
+            fresh: !self.before.contains(&window),
+            foreground: foreground() == window,
+        })
     }
 }
 impl Desktop for Session<'_> {
+    fn expired(&self) -> bool {
+        self.started.elapsed() >= Duration::from_secs(6)
+    }
     fn permitted(&self) -> bool {
         !self.stale
             && foreground::current(self.ticket)
             && !(self.cancelled)()
             && self.input.is_some()
             && input() == self.input
-            && self.started.elapsed() < Duration::from_secs(6)
             && (foreground() == self.baseline || self.matches(foreground()))
     }
     fn windows(&mut self) -> Vec<Candidate> {
@@ -216,7 +235,7 @@ impl Desktop for Session<'_> {
     }
     fn activate(&mut self, window: usize) {
         // Revalidate identity and user intent at the native mutation boundary.
-        if !self.permitted() || !self.matches(window) {
+        if self.expired() || !self.permitted() || !self.matches(window) {
             return;
         }
         let hwnd = HWND(window as *mut _);
@@ -224,7 +243,7 @@ impl Desktop for Session<'_> {
             if IsIconic(hwnd).as_bool() {
                 let _ = ShowWindowAsync(hwnd, SW_RESTORE);
             }
-            if self.permitted() {
+            if !self.expired() && self.permitted() {
                 let _ = SetForegroundWindow(hwnd);
             }
         }
@@ -266,9 +285,11 @@ pub(super) fn launch(
         } => (app_user_model_id.clone(), None),
     };
     let mut session = Session {
-        id,
-        path,
-        has_arguments: matches!(&app.launch, LaunchTarget::Shortcut {arguments,..} if !arguments.trim().is_empty()),
+        identity: AppIdentity {
+            id,
+            path,
+            has_arguments: matches!(&app.launch, LaunchTarget::Shortcut {arguments,..} if !arguments.trim().is_empty()),
+        },
         receipt: Receipt::default(),
         before: windows().into_iter().collect(),
         input: input(),
@@ -279,9 +300,10 @@ pub(super) fn launch(
         cancelled,
     };
     session.receipt = super::native::launch(app)?;
-    // Never hide a freshly summoned launcher, or hide after the user moved on.
+    // Activation and launcher ownership are separate. The caller may hide the
+    // old launcher after Shell moved focus, but must preserve a newer interaction.
     session.stale = !session.permitted();
-    let warning = if !session.stale { hide().err() } else { None };
+    let warning = hide().err();
     session.baseline = foreground(); // Windows can restore the previous foreground on hide.
     let (window_detected, activation) = foreground::discover(&mut session, 100);
     Ok(LaunchOutcome::accepted(

@@ -1,6 +1,7 @@
 # Release notes and publication status
 
-NEXUS v0.5.0 is a **release candidate with desktop acceptance pending**. A review
+NEXUS v0.5.1 is a **release candidate with desktop acceptance pending**. See the
+[current audit](../verification/V051_VERIFICATION.md) and [notes](v0.5.1.md). A historical review
 of the [GitHub Releases page](https://github.com/ishanpati/Nexus/releases) on
 2026-11-16 found no published releases or downloadable release assets.
 Local installers and existing tags do not establish a public, accepted release.
@@ -13,7 +14,8 @@ metadata was not retroactively corrected to match historical milestone labels.
 
 | Notes | Code date | Source commit | Package version at that point | Status |
 | --- | --- | --- | --- | --- |
-| [v0.5.0](v0.5.0.md) | 2026-11-15 | `797b7af` | 0.5.0 | Current release candidate; acceptance pending |
+| [v0.5.1](v0.5.1.md) | 2026-11-17 | `260bd74` + Stage B working tree | 0.5.1 | Current candidate; publication on hold |
+| [v0.5.0](v0.5.0.md) | 2026-11-15 | `797b7af` | 0.5.0 | Previous candidate; acceptance pending |
 | [v0.4.0](v0.4.0.md) | 2026-11-15 | `e8c4a35` | 0.4.0 | Historical candidate; packaged, desktop/installation gaps remain |
 | [v0.3.1](v0.3.1.md) | 2026-11-14 | `f58fb9c` | 0.3.0 | Ranking milestone; no new installer from that task |
 | [v0.3.0](v0.3.0.md) | 2026-11-14 | `54da00e` | 0.3.0 | Historical candidate; packaged, desktop/installation gaps remain |
@@ -22,8 +24,8 @@ metadata was not retroactively corrected to match historical milestone labels.
 
 The [changelog](../../CHANGELOG.md) summarizes changes by category. Original
 v0.5 stage entries remain in [development history](v0.5-development-history.md).
-Later repository maintenance and CI changes are listed under Unreleased; they
-do not create a new application version.
+Repository maintenance and CI changes since v0.5.0 are included in the v0.5.1
+changelog entry. Historical v0.5.0 checklists and hashes remain unchanged.
 
 ## Installation and upgrades
 

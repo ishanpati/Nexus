@@ -26,7 +26,9 @@ reopen tests do not establish installed-app restart or installer upgrade behavio
 Whole-plan validation precedes effects; admission is guarded against cancellation.
 Each run binds expiring, single-use approval to its step and normalized action.
 Lock/sleep are final-only; file execution authority is never granted to workflows.
-App activation reports acceptance without readiness guarantees. Runs have no
+App activation reports acceptance separately from window detection and verified
+foreground activation, without readiness guarantees. Both launcher and workflows
+use the [shared native foreground path](../features/FOREGROUND_LAUNCHING.md). Runs have no
 rollback, resume-after-process-exit, recursion, delay, or parallel-step facility.
 
 `workflow_studio.rs` owns one retained native window and a sequenced request mailbox.
@@ -45,7 +47,7 @@ React without raw HTML. Permissions/approval tokens are not protection against a
 fully compromised trusted frontend. No network runtime client is implemented.
 The SQLite document is plaintext and may contain private local references; logs do
 not deliberately print workflow documents. Back up stopped databases as described
-in the [user guide](../USER_GUIDE.md#workflow-data-and-backup). Current release evidence and remaining risks: [V05_VERIFICATION.md](../verification/V05_VERIFICATION.md).
+in the [user guide](../USER_GUIDE.md#workflow-data-and-backup). Current release evidence and remaining risks: [V051_VERIFICATION.md](../verification/V051_VERIFICATION.md).
 
 ## Frontend
 
@@ -54,7 +56,8 @@ parses exclusive `f ` / `w ` prefixes; bare letters remain ordinary app/command
 queries. `workflowSearch.ts` indexes saved UUIDs/names/aliases through `appSearch.ts`
 and owns generation-checked repository refreshes. `resultExecution.ts` dispatches
 workflow rows through the same Enter/click path. Only accepted starts clear input;
-the launcher stays available to show progress. Existing command success lifecycles
+the launcher stays available to show progress until an accepted app step hides
+its owned launcher; later summon restores access to progress. Existing command success lifecycles
 and file/system confirmations are preserved.
 
 `useLauncherWorkflows.ts` attaches scoped repository/progress/shown/focus listeners

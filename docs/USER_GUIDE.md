@@ -1,11 +1,11 @@
 # NEXUS user guide
 
-Detailed controls, setup, workflows, backup, troubleshooting, and development instructions for the v0.5.0 release candidate. For the product overview, return to the [README](../README.md). Release acceptance remains pending; see [v0.5 verification](verification/V05_VERIFICATION.md).
+Detailed controls, setup, workflows, backup, troubleshooting, and development instructions for the v0.5.1 release candidate. For the product overview, return to the [README](../README.md). Release acceptance remains pending; see [v0.5 verification](verification/V051_VERIFICATION.md).
 
 ## Install and run
 
 - Supported release target: Windows 11 x64 (including Intel Core Ultra systems).
-- Install `nexus_0.5.0_x64-setup.exe`, or the equivalent x64 MSI. Use one installer
+- Install `nexus_0.5.1_x64-setup.exe`, or the equivalent x64 MSI. Use one installer
   format. Close a running NEXUS with Alt+F4 before upgrading.
 - Microsoft Edge WebView2 Runtime is required. The installer can download it if
   absent; offline installation requires WebView2 to be installed beforehand.
